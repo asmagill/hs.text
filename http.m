@@ -8,7 +8,7 @@
 ///
 /// Perform HTTP requests with hs.text objects
 ///
-/// This submodule is a subet of the `hs.http` module modified to return `hs.text` objects for the response body of http requests. For http methods which allow submitting a body (e.g. POST), `hs.text` object may be used instead of lua strings as well.
+/// This submodule is a subset of the `hs.http` module modified to return `hs.text` objects for the response body of http requests. For http methods which allow submitting a body (e.g. POST), `hs.text` object may be used instead of lua strings as well.
 
 #import "text.h"
 

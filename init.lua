@@ -175,23 +175,36 @@ end
 
 -- pragma - mark - hs.text.utf16 functions, methods, and constants
 
--- string.gmatch (s, pattern)
---
--- Returns an iterator function that, each time it is called, returns the next captures from pattern (see §6.4.1) over the string s. If pattern specifies no captures, then the whole match is produced in each call.
--- As an example, the following loop will iterate over all the words from string s, printing one per line:
---
---      s = "hello world from Lua"
---      for w in string.gmatch(s, "%a+") do
---        print(w)
---      end
--- The next example collects all pairs key=value from the given string into a table:
---
---      t = {}
---      s = "from=world, to=Lua"
---      for k, v in string.gmatch(s, "(%w+)=(%w+)") do
---        t[k] = v
---      end
--- For this function, a caret '^' at the start of a pattern does not work as an anchor, as this would prevent the iteration.
+--- hs.text.utf16:gmatch(pattern) -> iteratorFunction
+--- Method
+--- Returns an iterator function that iteratively returns the captures (if specified) or the entire match (if no captures are specified) of the pattern over the utf16TextObject.
+---
+--- Paramters:
+---  * `pattern` - a lua string or utf16TextObject specifying the pattern to iteratively match over the utf16TextObject.
+---
+--- Returns:
+---  * an iterator function which can be used with the lua `for` command as an iterator.
+---
+--- Notes:
+---  * This method is the utf16 equivalent of lua's `string.gmatch`.
+---  * This method uses the [hs.text.utf16:find](#find) method on a copy of the original string, so it is safe to modify the original object within the loop. See the documentation for [find](#find) for information on the format of `pattern`.
+---
+---  * The following examples are from the Lua documentation for `string.gmatch` modified with the proper syntax:
+---
+---      ~~~
+---      -- print each word on a separate line
+---      s = hs.text.utf16.new("hello world from Lua")
+---      for w in s:gmatch([[\p{Alphabetic}+]]) do
+---        print(w)
+---      end
+---
+---      -- collect all pairs key=value from the given string into a table:
+---      t = {}
+---      s = hs.text.utf16.new("from=world, to=Lua")
+---      for k, v in s:gmatch([[(\w+)=(\w+)]]) do
+---        t[tostring(k)] = tostring(v)
+---      end
+---      ~~~
 utf16MT.gmatch = function(self, pattern)
     local pos, selfCopy = 1, self:copy()
     return function()
@@ -208,12 +221,24 @@ utf16MT.gmatch = function(self, pattern)
     end
 end
 
--- utf8.codes (s)
---
--- Returns values so that the construction
---
---      for p, c in utf8.codes(s) do body end
--- will iterate over all characters in string s, with p being the position (in bytes) and c the code point of each character. It raises an error if it meets any invalid byte sequence.
+--- hs.text.utf16:codes() -> iteratorFunction
+--- Method
+--- Returns an iterator function that returns the index position (in UTF16 characters) and codepoint of each character in the utf16TextObject.
+---
+--- Paramters:
+---  * None
+---
+--- Returns:
+---  * an iterator function which can be used with the lua `for` command as an iterator.
+---
+--- Notes:
+---  * This method is the utf16 equivalent of lua's `utf8.codes`.
+---  * Example usage:
+---
+---      ~~~
+---      s = hs.text.utf16.new("Test 🙂 123")
+---      for p,c in s:codes() do print(p, string.format("U+%04x", c)) end
+---      ~~~
 utf16MT.codes = function(self)
     return function(iterSelf, index)
         if index > 0 and module.utf16.isHighSurrogate(iterSelf:unitCharacter(index)) then
@@ -229,6 +254,23 @@ utf16MT.codes = function(self)
     end, self, 0
 end
 
+--- hs.text.utf16:composedCharacters() -> iteratorFunction
+--- Method
+--- Returns an iterator function that returns the indicies of each character in the utf16TextObject, treating surrogate pairs and composed character sequences as single characters.
+---
+--- Paramters:
+---  * None
+---
+--- Returns:
+---  * an iterator function which can be used with the lua `for` command as an iterator.
+---
+--- Notes:
+---  * Example usage:
+---
+---      ~~~
+---      s = hs.text.utf16.new("abc🙂123") .. hs.text.utf16.char(0x073, 0x0323, 0x0307) .. "xyz"
+---      for i,j in s:composedCharacters() do print(i, j, s:sub(i,j)) end
+---      ~~~
 utf16MT.composedCharacters = function(self)
     return function(iterSelf, index)
         if index > 0 then

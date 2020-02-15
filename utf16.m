@@ -110,7 +110,7 @@ static int combinedFindAndMatch(lua_State *L, NSString *objString, NSString *pat
 ///
 /// Parameters:
 ///  * `text`  - a lua string or `hs.text` object specifying the text for the new utf16TextObject
-///  * `lossy` - an optional boolean, default false, specifying whether or not characters can be removed or altered when converting the data to the UTF16 encoding.
+///  * `lossy` - an optional boolean, default `false`, specifying whether or not characters can be removed or altered when converting the data to the UTF16 encoding.
 ///
 /// Returns:
 ///  * a new utf16TextObject, or nil if the data could not be encoded as a utf16TextObject
@@ -339,7 +339,7 @@ static int utf16_copy(__unused lua_State *L) {
 ///
 /// Paramters:
 ///  * `transform` - a string specifying the ICU transform(s) to apply
-///  * `inverse`   - an optional boolean, default false, specifying whether or not to apply the inverse (or reverse) of the specified transformation
+///  * `inverse`   - an optional boolean, default `false`, specifying whether or not to apply the inverse (or reverse) of the specified transformation
 ///
 /// Returns:
 ///  * a new utf16TextObject containing the transformed data, or nil if the transform (or its inverse) could not be applied or was invalid
@@ -380,7 +380,7 @@ static int utf16_transform(lua_State *L) {
 /// Create a new utf16TextObject with the contents of the parent normalized using Unicode Normalization Form (K)D.
 ///
 /// Paramters:
-///  * `compatibilityMapping` - an optionabl boolean, default false, specifying whether compatibility mapping (true) should be used (Normalization Form KD) or canonical mapping (false) should be used (Normalization Form D) when normalizing the text.
+///  * `compatibilityMapping` - an optionabl boolean, default `false`, specifying whether compatibility mapping (true) should be used (Normalization Form KD) or canonical mapping (false) should be used (Normalization Form D) when normalizing the text.
 ///
 /// Returns:
 ///  * a new utf16TextObject with the contents of the parent normalized using Unicode NormalizationForm (K)D.
@@ -411,7 +411,7 @@ static int utf16_unicodeDecomposition(lua_State *L) {
 /// Create a new utf16TextObject with the contents of the parent normalized using Unicode Normalization Form (K)C.
 ///
 /// Paramters:
-///  * `compatibilityMapping` - an optionabl boolean, default false, specifying whether compatibility mapping (true) should be used (Normalization Form KC) or canonical mapping (false) should be used (Normalization Form C) when normalizing the text.
+///  * `compatibilityMapping` - an optionabl boolean, default `false`, specifying whether compatibility mapping (true) should be used (Normalization Form KC) or canonical mapping (false) should be used (Normalization Form C) when normalizing the text.
 ///
 /// Returns:
 ///  * a new utf16TextObject with the contents of the parent normalized using Unicode NormalizationForm (K)C.
@@ -442,8 +442,8 @@ static int utf16_unicodeComposition(lua_State *L) {
 /// Returns the UTF16 unit character codes for the range specified
 ///
 /// Paramters:
-///  * `i` - the starting index, default 1, specifying which UTF16 character to begin at; negative indicies are counted from the end of the string.
-///  * `j` - the ending index, default the valur of `i`, specifying the end of the range; negative indicies are counted from the end of the string.
+///  * `i` - an optional integer, default 1, specifying the starting indexof the UTF16 character to begin at; negative indicies are counted from the end of the string.
+///  * `j` - an optional integer, default the value of `i`, specifying the end of the range; negative indicies are counted from the end of the string.
 ///
 /// Returns:
 ///  * zero or more integers representing the individual utf16 "characters" of the object within the range specified
@@ -451,7 +451,7 @@ static int utf16_unicodeComposition(lua_State *L) {
 /// Notes:
 ///  * this method returns the 16bit integer corresponding to the UTF16 "character" at the indicies specified. Surrogate pairs *are* treated as two separate "characters" by this method, so the initial or final character may be a broken surrogate -- see [hs.text.utf16.isHighSurrogate](#isHighSurrogate) and [hs.text.utf16.isLowSurrogate](#isLowSurrogate).
 ///
-///  * this method follows the semantics of `utf8.codepoint` -- if a specified index is out of range, an error is generated.
+///  * this method follows the semantics of `utf8.codepoint` -- if a specified index is out of range, a lua error is generated.
 static int utf16_unitCharacter(lua_State *L) {
     LuaSkin *skin = [LuaSkin shared] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
@@ -485,8 +485,8 @@ static int utf16_unitCharacter(lua_State *L) {
 /// Returns the starting and ending index of the specified range, adjusting for composed characters or surrogate pairs at the beginning and end of the range.
 ///
 /// Paramters:
-///  * `i` - the starting index, default 1, specifying which UTF16 character to begin at; negative indicies are counted from the end of the string.
-///  * `j` - the ending index, default the valur of `i`, specifying the end of the range; negative indicies are counted from the end of the string.
+///  * `i` - an optional integer, default 1, specifying the starting index of the UTF16 character to begin at; negative indicies are counted from the end of the string.
+///  * `j` - an optional integer, default the value of `i`, specifying the end of the range; negative indicies are counted from the end of the string.
 ///
 /// Returns:
 ///  * the `start` and `end` indicies for the range of characters specified by the initial range
@@ -495,7 +495,7 @@ static int utf16_unitCharacter(lua_State *L) {
 ///  * if the unit character at index `i` specifies a low surrogate or is in the middle of a mulit-"character" composed character, `start` will be < `i`
 ///  * likewise if `j` is in the middle of a multi-"character" composition or surrogate, `end` will be > `j`.
 ///
-///  * this method follows the semantics of `utf8.codepoint` -- if a specified index is out of range, an error is generated.
+///  * this method follows the semantics of `utf8.codepoint` -- if a specified index is out of range, a lua error is generated.
 static int utf16_composedCharacterRange(lua_State *L) {
     LuaSkin *skin = [LuaSkin shared] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
@@ -879,7 +879,7 @@ static int utf16_string_match(lua_State *L) {
 /// Paramters:
 ///  * `pattern` - a lua string or utf16TextObject specifying the pattern for the match. See *Notes*.
 ///  * `i`       - an optional integer, default 1, specifying the index of the utf16TextObject where the search for the pattern should begin; negative indicies are counted from the end of the object.
-///  * `plain`   - an optional boolean, default false, specifying that the pattern should be matched *exactly* (true) instead of treated as a regular expression (false).
+///  * `plain`   - an optional boolean, default `false`, specifying that the pattern should be matched *exactly* (true) instead of treated as a regular expression (false).
 ///
 /// Returns:
 ///  * If a match is found, returns the starting and ending indicies of the match (as integers); if captures are specified in the pattern, also returns a new utf16TextObjects for each capture after the indicies. If no match is found, returns nil.
@@ -916,7 +916,7 @@ static int utf16_string_find(lua_State *L) {
     return combinedFindAndMatch(L, objString, pattern, i, YES) ;
 }
 
-/// hs.text.urf16:gsub(pattern, replacement, [n]) -> utf16TextObject, count
+/// hs.text.utf16:gsub(pattern, replacement, [n]) -> utf16TextObject, count
 /// Method
 /// Return a gopy of the object with occurances of the pattern replaced; global substitution.
 ///
@@ -1129,9 +1129,20 @@ static int utf16_string_gsub(lua_State *L) {
 
 #pragma mark * From lua utf8 library *
 
-// utf8.codepoint (s [, i [, j]])
-//
-// Returns the codepoints (as integers) from all characters in s that start between byte position i and j (both included). The default for i is 1 and for j is i. It raises an error if it meets any invalid byte sequence.
+/// hs.text.utf16:codpoint([i], [j]) -> integer, ...
+/// Method
+/// Returns the Unicode Codepoints for all characters in the utf16TextObject between the specified indicies.
+///
+/// Paramters:
+///  * `i` - an optional integer, default 1, specifying the starting index of the UTF16 character to begin at; negative indicies are counted from the end of the string.
+///  * `j` - an optional integer, default the value of `i`, specifying the end of the range; negative indicies are counted from the end of the string.
+///
+/// Returns:
+///  * zero or more integers representing the Unicode Codepoints of the UTF16 "character" at the indicies specified.
+///
+/// Notes:
+///  * This method is the utf16 equivalent of lua's `utf8.codepoint` and follows the same semantics -- if a specified index is out of range, a lua error is generated.
+///  * This method differs from [hs.text.uf16:unitCharacter](#unitCharacter) in that surrogate pairs will result in a single codepoint between U+010000 to U+10FFFF instead of two separate UTF16 characters.
 static int utf16_utf8_codepoint(lua_State *L) {
     LuaSkin *skin = [LuaSkin shared] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
@@ -1176,9 +1187,22 @@ static int utf16_utf8_codepoint(lua_State *L) {
     return count ;
 }
 
-// utf8.len (s [, i [, j]])
-//
-// Returns the number of UTF-8 characters in string s that start between positions i and j (both inclusive). The default for i is 1 and for j is -1. If it finds any invalid byte sequence, returns a false value plus the position of the first invalid byte.
+/// hs.text.utf16:characterCount([composedCharacters], [i], [j]) -> integer | nil, integer
+/// Method
+/// Returns the number of UTF16 characters in the utf16TextObject between the specified indicies.
+///
+/// Paramters:
+///  * `composedCharacters` - an optional boolean, default `false`, specifying whether or not composed character sequences should be treated as a single character (true) or count for as many individual UTF16 "characters" as are actually used to specify the sequence (false).
+///  * `i`                  - an optional integer, default 1, specifying the starting index of the UTF16 character to begin at; negative indicies are counted from the end of the string.
+///  * `j`                  - an optional integer, default -1, specifying the end of the range; negative indicies are counted from the end of the string.
+///
+/// Returns:
+///  * if no invalid sequences are found (see next), returns the number of Unicode characters in the range specified.
+///  * if an invalid sequence is found (specifically an isolated low or high surrogate or compoased character sequence that starts or ends outside of the specified range when `composedCharacters` is `true`, returns `nil` and the index position of the first invalid UTF16 character.
+///
+/// Notes:
+///  * This method is similar to lua's `utf8.len` and follows the same semantics -- if a specified index is out of range, a lua error is generated.
+///  * This method differs from [hs.text.uf16:len](#len) in that surrogate pairs count as one character and composed characters can optionally be considered a single character as well.
 static int utf16_utf8_len(lua_State *L) {
     LuaSkin *skin              = [LuaSkin shared] ;
     int     iIdx               = 2 ;
@@ -1250,12 +1274,20 @@ static int utf16_utf8_len(lua_State *L) {
     return 1 ;
 }
 
-// utf8.offset (s, n [, i])
-//
-// Returns the position (in bytes) where the encoding of the n-th character of s (counting from position i) starts. A negative n gets characters before position i. The default for i is 1 when n is non-negative and #s + 1 otherwise, so that utf8.offset(s, -n) gets the offset of the n-th character from the end of the string. If the specified character is neither in the subject nor right after its end, the function returns nil.
-// As a special case, when n is 0 the function returns the start of the encoding of the character that contains the i-th byte of s.
-//
-// This function assumes that s is a valid UTF-8 string.
+/// hs.text.utf16:offset([composedCharacters], n, [i]) -> integer | nil
+/// Method
+/// Returns the position (in UTF16 characters) where the encoding of the `n`th character of the utf16TextObject begins.
+///
+/// Paramters:
+///  * `composedCharacters` - an optional boolean, default `false` specifying whether or not composed character sequences should be considered as a single UTF16 character (true) or as the individual characters that make up the sequence (false).
+///  * `n`                  - an integer specifying the UTF16 character number to get the offset for, starting from position `i`. If `n` is negative, gets specifies the number of characters before position `i`.
+///  * `i`                  - an optional integer, default 1 when `n` is non-negative or [hs.text.utf16:len](#len) + 1 when `n` is negative, specifiying the starting character from which to count `n`.
+///
+/// Returns:
+///  * the index of the utf16TextObject where the `n`th character begins or nil if no such character exists. As a special case when `n` is 0, returns the offset of the start of the character that contains the `i`th UTF16 character of the utf16Text obejct.
+///
+/// Notes:
+///  * This method is the utf16 equivalent of lua's `utf8.offset`.
 static int utf16_utf8_offset(lua_State *L) {
     LuaSkin *skin              = [LuaSkin shared] ;
     int     nIdx               = 2 ;
@@ -1281,7 +1313,7 @@ static int utf16_utf8_offset(lua_State *L) {
     if (n == 0) {
         while (i > 0 && inMiddleOfChar(objString, (NSUInteger)i, charactersComposed)) i-- ;
     } else {
-        if (inMiddleOfChar(objString, (NSUInteger)i, charactersComposed)) return luaL_error(L, "initial position is a continuation byte") ;
+        if (inMiddleOfChar(objString, (NSUInteger)i, charactersComposed)) return luaL_error(L, "initial position is in middle of surrogate pair or composed character sequence") ;
         if (n < 0) {
             while (n < 0 && i > 0) {  // move back
                 do {  // find beginning of previous character
@@ -1309,13 +1341,11 @@ static int utf16_utf8_offset(lua_State *L) {
 
 #pragma mark - Module Constants
 
-// need to understand http://userguide.icu-project.org/transforms/general to see about adding new transforms
-// or helpers to make them
 /// hs.text.utf16.builtInTransforms
 /// Constant
 /// Built in transormations which can be used with [hs.text.utf16:transform](#transform).
 ///
-/// This table contains key-value pairs identifying built in transforms provided by the macOS Objective-C runtime environment for use with [hs.text.utf16:transform](#transform). See http://userguide.icu-project.org/transforms/general for a more complete discussion on how to specify aditional transformations.
+/// This table contains key-value pairs identifying built in transforms provided by the macOS Objective-C runtime environment for use with [hs.text.utf16:transform](#transform). See http://userguide.icu-project.org/transforms/general for a more complete discussion on how to specify your own transformations.
 ///
 /// The built in transformations are:
 ///  * `fullwidthToHalfwidth` - transform full-width CJK characters to their half-width forms. e.g. “マット” transforms to “ﾏｯﾄ”. This transformation is reversible.
