@@ -1,43 +1,33 @@
-* Creating and Initializing a String from a File -- in hs.text
-* Creating and Initializing a String from an URL -- in hs.text.http
-* Writing to a File
-* Posting to an URL -- in hs.text.http
+NSRegularExpression -- as submodule `hs.text.regex`,
 
-* Working with Encodings -- in hs.text
-*     - (BOOL)canBeConvertedToEncoding:(NSStringEncoding)encoding;    -- we already check for nil in NSData conversion, so duplicattion of effort
 
-* Getting Characters and Bytes
-
-* Combining Strings
-
-* Changing Case
-
-* Normalizing Strings (see http://www.unicode.org/reports/tr15/)
-
-* Determining Composed Character Sequences
-
-- Transforming Strings
-  -     - (NSString *)stringByApplyingTransform:(NSStringTransform)transform reverse:(BOOL)reverse;
-  -         partially complete; need better understanding of http://userguide.icu-project.org/transforms/general
-
-  Identifying and Comparing Strings
+NSString -- potential future additions
 
   Dividing Strings
+    Think separating into hs.text objects at newline
       - (NSArray<NSString *> *)componentsSeparatedByString:(NSString *)separator;
       - (NSArray<NSString *> *)componentsSeparatedByCharactersInSet:(NSCharacterSet *)separator;
-          Think separating into hs.text objects at newline
+    Think trimming whitespace from begining and ending
       - (NSString *)stringByTrimmingCharactersInSet:(NSCharacterSet *)set;
-          Think trimming whitespace from begining and ending
-  *   - (NSString *)substringWithRange:(NSRange)range;
-
-  Finding Characters and Substrings
-
-  Replacing Substrings
 
   Determining Line and Paragraph Ranges
+    (note separators in description of each; iterate through object to return array of indices?)
+      - (void)getLineStart:(NSUInteger *)startPtr end:(NSUInteger *)lineEndPtr contentsEnd:(NSUInteger *)contentsEndPtr forRange:(NSRange)range;
+      - (void)getParagraphStart:(NSUInteger *)startPtr end:(NSUInteger *)parEndPtr contentsEnd:(NSUInteger *)contentsEndPtr forRange:(NSRange)range;
 
-  Future string related module or text submodule:
-      Performing Linguistic Analysis
-      Working With Paths
-      Working With URL Strings
-      Converting String Contents Into a PropertyList
+  Performing Linguistic Analysis
+    (NSString *) [NSLinguisticTagger dominantLanguageForString:(NSString *)string];
+    NSLinguisticTagger:
+        Identifying Parts of Speech
+        Identifying People, Places, and Organizations
+
+  Working With Paths
+    @property(readonly, copy) NSString *stringByAbbreviatingWithTildeInPath;
+    @property(readonly, copy) NSString *stringByResolvingSymlinksInPath;
+    @property(readonly, copy) NSString *stringByStandardizingPath;
+
+  Working With URL Strings
+    - (NSString *)stringByAddingPercentEncodingWithAllowedCharacters:(NSCharacterSet *)allowedCharacters;
+    @property(readonly, copy) NSString *stringByRemovingPercentEncoding;
+
+
