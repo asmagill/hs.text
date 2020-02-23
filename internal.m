@@ -728,6 +728,7 @@ int luaopen_hs_text_internal(lua_State* L) {
 
     luaopen_hs_text_utf16(L) ; lua_setfield(L, -2, "utf16") ;
     luaopen_hs_text_http(L) ;  lua_setfield(L, -2, "http") ;
+    luaopen_hs_text_regex(L) ; lua_setfield(L, -2, "regex") ;
 
     return 1;
 }

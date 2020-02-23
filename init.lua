@@ -22,6 +22,7 @@ end
 
 local textMT  = hs.getObjectMetatable(USERDATA_TAG)
 local utf16MT = hs.getObjectMetatable(USERDATA_TAG..".utf16")
+local regexMT = hs.getObjectMetatable(USERDATA_TAG..".regex")
 
 require("hs.http") -- load some conversion functions that may be useful with hs.text.http, not certain yet
 
@@ -334,6 +335,50 @@ end
 
 module.utf16.builtinTransforms = ls.makeConstantsTable(module.utf16.builtinTransforms)
 module.utf16.compareOptions    = ls.makeConstantsTable(module.utf16.compareOptions)
+
+-- pragma - mark - hs.text.regex functions, methods, and constants
+
+--- hs.text.regex.new(pattern, [options]) -> regexObject
+--- Constructor
+--- Create a new `hs.text.regex` object with the specified regular expression
+---
+--- Parameters:
+---  * `pattern` - a lua string specifying the regular expression
+---  * `options` - an optional integer or table of integers and strings corresponding to values in the [hs.text.regex.options](#options) constant.
+---    * if `options` is an integer, it should a combination of 1 or more of the numeric values in the [hs.text.regex.options](#options) constant logically OR'ed together (e.g. `hs.text.regex.options.caseInsensitive | hs.text.regex.options.ignoreMetacharacters`)
+---    * if `options` is a table, each element of the array table should be a number value from the [hs.text.regex.options](#options) constant or a string matching one of the constant's keys. This method will logically OR the appropriate values together for you (e.g. `{"caseInsensitive", "ignoreMetacharacters"}`)
+---
+--- Returns:
+---  * a new regexObject, or nil if there is an error in the regular expression
+---
+--- Notes:
+---  * The regular expression syntax supported by this module is described in detail at http://userguide.icu-project.org/strings/regexp
+---  * Any error encountered when creating the regular expression object will be logged to the Hammerspoon console and this method will return nil.
+module.regex.new = function(...)
+    local args = table.pack(...)
+    if type(args[2]) == "table" then
+        local options = 0
+        for _,v in ipairs(args[2]) do
+            if type(v) == "number" then
+                options = options | v
+            elseif type(v) == "string" then
+                local value = module.regex.options[v]
+                if value then
+                    options = options | value
+                else
+                    error("expected integer or string from hs.regex.options in argument 2 table", 2)
+                end
+            else
+                error("expected integer or string from hs.regex.options in argument 2 table", 2)
+            end
+        end
+        args[2] = options
+    end
+    return module.regex._new(table.unpack(args))
+end
+
+module.regex.options      = ls.makeConstantsTable(module.regex.options)
+module.regex.matchOptions = ls.makeConstantsTable(module.regex.matchOptions)
 
 -- Return Module Object --------------------------------------------------
 

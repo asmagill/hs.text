@@ -5,9 +5,11 @@
 static const char * const USERDATA_TAG = "hs.text" ;
 static const char * const UTF16_UD_TAG = "hs.text.utf16" ;
 static const char * const HTTP_UD_TAG  = "hs.text.http" ;
+static const char * const REGEX_UD_TAG = "hs.text.regex" ;
 
 extern int luaopen_hs_text_utf16(lua_State *L) ;
 extern int luaopen_hs_text_http(lua_State *L) ;
+extern int luaopen_hs_text_regex(lua_State *L) ;
 
 @interface HSTextObject : NSObject
 @property NSData           *contents ;
@@ -38,4 +40,11 @@ extern int luaopen_hs_text_http(lua_State *L) ;
 - (void)connection:(NSURLConnection * __unused)connection didReceiveData:(NSData *)data ;
 - (void)connectionDidFinishLoading:(NSURLConnection * __unused)connection ;
 - (void)connection:(NSURLConnection * __unused)connection didFailWithError:(NSError *)error ;
+@end
+
+@interface HSRegularExpression : NSRegularExpression
+@property int      selfRef ;
+@property int      selfRefCount ;
+
+- (instancetype)initWithPattern:(NSString *)pattern options:(NSRegularExpressionOptions)options ;
 @end
