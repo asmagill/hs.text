@@ -465,7 +465,7 @@ static int utf16_unitCharacter(lua_State *L) {
     if (i < 0) i = length + 1 + i ; // negative indicies are from string end
     if (j < 0) j = length + 1 + j ; // negative indicies are from string end
 
-    // match behavior of utf8.codepoint -- it's a little more anal then string.sub about subscripts...
+    // match behavior of utf8.codepoint -- it's a little more anal then string.sub about indicies...
     if ((i < 1) || (i > length)) return luaL_argerror(L, 2, "out of range") ;
     if ((j < 1) || (j > length)) return luaL_argerror(L, 3, "out of range") ;
 
@@ -509,7 +509,7 @@ static int utf16_composedCharacterRange(lua_State *L) {
     if (i < 0) i = length + 1 + i ; // negative indicies are from string end
     if (j < 0) j = length + 1 + j ; // negative indicies are from string end
 
-    // match behavior of utf8.codepoint -- it's a little more anal then string.sub about subscripts...
+    // match behavior of utf8.codepoint -- it's a little more anal then string.sub about indicies...
     if ((i < 1) || (i > length)) return luaL_argerror(L, 2, "out of range") ;
     if ((j < 1) || (j > length)) return luaL_argerror(L, 3, "out of range") ;
 
@@ -1156,7 +1156,7 @@ static int utf16_utf8_codepoint(lua_State *L) {
     if (i < 0) i = length + 1 + i ; // negative indicies are from string end
     if (j < 0) j = length + 1 + j ; // negative indicies are from string end
 
-    // match behavior of utf8.codepoint -- it's a little more anal then string.sub about subscripts...
+    // match behavior of utf8.codepoint -- it's a little more anal then string.sub about indicies...
     if ((i < 1) || (i > length)) return luaL_argerror(L, 2, "out of range") ;
     if ((j < 1) || (j > length)) return luaL_argerror(L, 3, "out of range") ;
 
