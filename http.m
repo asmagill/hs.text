@@ -47,8 +47,8 @@ static void store_delegate(HSTextHTTPDelegate* delegate) {
 // Remove a delegate either if loading has finished or if it needs to be
 // garbage collected. This unreferences the lua callback and sets the callback
 // reference in the delegate to LUA_NOREF.
-static void remove_delegate(__unused lua_State* L, HSTextHTTPDelegate* delegate) {
-    LuaSkin *skin = [LuaSkin shared];
+static void remove_delegate(lua_State* L, HSTextHTTPDelegate* delegate) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L];
 
     [delegate.connection cancel];
     delegate.fn = [skin luaUnref:refTable ref:delegate.fn];
@@ -77,7 +77,7 @@ static void remove_delegate(__unused lua_State* L, HSTextHTTPDelegate* delegate)
     if (self.fn == LUA_NOREF) {
         return;
     }
-    LuaSkin *skin = [LuaSkin shared];
+    LuaSkin *skin = [LuaSkin sharedWithState:NULL];
     lua_State *L = skin.L;
     _lua_stackguard_entry(L);
 
@@ -95,7 +95,7 @@ static void remove_delegate(__unused lua_State* L, HSTextHTTPDelegate* delegate)
     if (self.fn == LUA_NOREF){
         return;
     }
-    LuaSkin *skin = [LuaSkin shared];
+    LuaSkin *skin = [LuaSkin sharedWithState:NULL];
     _lua_stackguard_entry(skin.L);
 
     NSString* errorMessage = [NSString stringWithFormat:@"Connection failed: %@ - %@", [error localizedDescription], [[error userInfo] objectForKey:NSURLErrorFailingURLStringErrorKey]];
@@ -113,7 +113,7 @@ static void remove_delegate(__unused lua_State* L, HSTextHTTPDelegate* delegate)
 // add it to the request and add the content length header field
 static void getBodyFromStack(lua_State* L, int index, NSMutableURLRequest* request){
     if (!lua_isnoneornil(L, index)) {
-        LuaSkin *skin = [LuaSkin shared] ;
+        LuaSkin *skin = [LuaSkin sharedWithState:L] ;
         NSData *postData ;
         if (lua_type(L, index) == LUA_TSTRING) {
             postData = [skin toNSObjectAtIndex:index withOptions:LS_NSLuaStringAsDataOnly] ;
@@ -135,8 +135,8 @@ static void getBodyFromStack(lua_State* L, int index, NSMutableURLRequest* reque
 }
 
 // Gets all information for the request from the stack and creates a request
-static NSMutableURLRequest* getRequestFromStack(__unused lua_State* L, NSString* cachePolicy){
-    LuaSkin *skin = [LuaSkin shared];
+static NSMutableURLRequest* getRequestFromStack(lua_State* L, NSString* cachePolicy){
+    LuaSkin *skin = [LuaSkin sharedWithState:L];
     NSString* url = [skin toNSObjectAtIndex:1];
     NSString* method = [skin toNSObjectAtIndex:2];
 
@@ -205,7 +205,7 @@ static void extractHeadersFromStack(lua_State* L, int index, NSMutableURLRequest
 ///  * If authentication is required in order to download the request, the required credentials must be specified as part of the URL (e.g. "http://user:password@host.com/"). If authentication fails, or credentials are missing, the connection will attempt to continue without credentials.
 ///  * If the Content-Type response header begins `text/` then the response body return value is a UTF8 string. Any other content type passes the response body, unaltered, as a stream of bytes.
 static int http_doAsyncRequest(lua_State* L){
-    LuaSkin *skin = [LuaSkin shared];
+    LuaSkin *skin = [LuaSkin sharedWithState:L];
     [skin checkArgs:LS_TSTRING, LS_TSTRING, LS_TANY, LS_TTABLE|LS_TNIL, LS_TFUNCTION, LS_TSTRING | LS_TOPTIONAL, LS_TBREAK];
 
     NSString* cachePolicy = [skin toNSObjectAtIndex:6];
@@ -257,7 +257,7 @@ static int http_doAsyncRequest(lua_State* L){
 ///  * If you attempt to connect to a local Hammerspoon server created with `hs.httpserver`, then Hammerspoon will block until the connection times out (60 seconds), return a failed result due to the timeout, and then the `hs.httpserver` callback function will be invoked (so any side effects of the function will occur, but it's results will be lost).  Use [hs.text.http.doAsyncRequest](#doAsyncRequest) to avoid this.
 ///  * If the Content-Type response header begins `text/` then the response body return value is a UTF8 string. Any other content type passes the response body, unaltered, as a stream of bytes.
 static int http_doRequest(lua_State* L) {
-    LuaSkin *skin = [LuaSkin shared];
+    LuaSkin *skin = [LuaSkin sharedWithState:L];
     [skin checkArgs:LS_TSTRING, LS_TSTRING, LS_TANY|LS_TOPTIONAL, LS_TTABLE|LS_TNIL|LS_TOPTIONAL, LS_TSTRING|LS_TOPTIONAL, LS_TBREAK];
 
     NSString* cachePolicy = [skin toNSObjectAtIndex:5];
@@ -309,8 +309,8 @@ static const luaL_Reg metalib[] = {
     {NULL, NULL} // This must end with an empty struct
 };
 
-int luaopen_hs_text_http(lua_State* L __unused) {
-    LuaSkin *skin = [LuaSkin shared];
+int luaopen_hs_text_http(lua_State* L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L];
 
     delegates = [[NSMutableArray alloc] init];
     refTable = [skin registerLibrary:httplib metaFunctions:metalib];

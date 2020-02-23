@@ -55,7 +55,7 @@ BOOL inMiddleOfChar(NSString *string, NSUInteger idx, BOOL charactersComposed) {
 }
 
 static int combinedFindAndMatch(lua_State *L, NSString *objString, NSString *pattern, lua_Integer idx, BOOL isFind) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
 
     NSRegularExpressionOptions options = 0 ;
     if (isFind && (lua_gettop(L) == 4) && lua_toboolean(L, 4)) options = NSRegularExpressionIgnoreMetacharacters ;
@@ -115,7 +115,7 @@ static int combinedFindAndMatch(lua_State *L, NSString *objString, NSString *pat
 /// Returns:
 ///  * a new utf16TextObject, or nil if the data could not be encoded as a utf16TextObject
 static int utf16_new(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     NSData           *input   = [NSData data] ;
     BOOL             lossy    = (lua_gettop(L) > 1) ? (BOOL)lua_toboolean(L, 2) : NO ;
     NSStringEncoding encoding = NSUTF8StringEncoding ;
@@ -182,7 +182,7 @@ static int utf16_new(lua_State *L) {
 /// Notes:
 ///  * Unicode Codepoints are often written as `U+xxxx` where `xxxx` is between 4 and 6 hexadecimal digits. Lua can automatically convert hexadecimal numbers to integers, so replace the `U+` with `0x` when specifying codepoints in this format.
 static int utf16_utf8_char(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     NSMutableString *newString = [NSMutableString stringWithCapacity:(NSUInteger)lua_gettop(L)] ;
     for (int i = 1 ; i <= lua_gettop(L) ; i++) {
         if (lua_type(L, i) != LUA_TNUMBER) return luaL_argerror(L, i, [[NSString stringWithFormat:@"number expected, got %s", luaL_typename(L, i)] UTF8String]) ;
@@ -221,7 +221,7 @@ static int utf16_utf8_char(lua_State *L) {
 ///
 /// * See also [hs.text.utf16.isLowSurrogate](#isLowSurrogate)
 static int utf16_isHighSurrogate(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TNUMBER | LS_TINTEGER, LS_TBREAK] ;
     unichar ch = (unichar)lua_tointeger(L, 1) ;
     lua_pushboolean(L, CFStringIsSurrogateHighCharacter(ch)) ;
@@ -246,7 +246,7 @@ static int utf16_isHighSurrogate(lua_State *L) {
 ///
 /// * See also [hs.text.utf16.isHighSurrogate](#isHighSurrogate)
 static int utf16_isLowSurrogate(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TNUMBER | LS_TINTEGER, LS_TBREAK] ;
     unichar ch = (unichar)lua_tointeger(L, 1) ;
     lua_pushboolean(L, CFStringIsSurrogateLowCharacter(ch)) ;
@@ -268,7 +268,7 @@ static int utf16_isLowSurrogate(lua_State *L) {
 ///
 /// * See also [hs.text.utf16.isHighSurrogate](#isHighSurrogate) and [hs.text.utf16.isLowSurrogate](#isLowSurrogate)
 static int utf16_surrogatePairForCodepoint(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TNUMBER | LS_TINTEGER, LS_TBREAK] ;
     uint32_t codepoint = (uint32_t)lua_tointeger(L, 1) ;
     unichar surrogates[2] ;
@@ -298,7 +298,7 @@ static int utf16_surrogatePairForCodepoint(lua_State *L) {
 ///
 /// * See also [hs.text.utf16.isHighSurrogate](#isHighSurrogate) and [hs.text.utf16.isLowSurrogate](#isLowSurrogate)
 static int utf16_codepointForSurrogatePair(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TNUMBER | LS_TINTEGER, LS_TNUMBER | LS_TINTEGER, LS_TBREAK] ;
     unichar ch1 = (unichar)lua_tointeger(L, 1) ;
     unichar ch2 = (unichar)lua_tointeger(L, 2) ;
@@ -322,8 +322,8 @@ static int utf16_codepointForSurrogatePair(lua_State *L) {
 ///
 /// Returns:
 ///  * a copy of the utf16TextObject as a new object
-static int utf16_copy(__unused lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+static int utf16_copy(lua_State *L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -350,7 +350,7 @@ static int utf16_copy(__unused lua_State *L) {
 ///
 ///  * Note that not all transforms have an inverse or are reversible.
 static int utf16_transform(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TSTRING, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -392,7 +392,7 @@ static int utf16_transform(lua_State *L) {
 ///
 ///  * See also [hs.text.utf16:unicodeComposition](#unicodeComposition)
 static int utf16_unicodeDecomposition(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object  = [skin toNSObjectAtIndex:1] ;
     NSString          *objString    = utf16Object.utf16string ;
@@ -423,7 +423,7 @@ static int utf16_unicodeDecomposition(lua_State *L) {
 ///
 ///  * See also [hs.text.utf16:unicodeDecomposition](#unicodeDecomposition)
 static int utf16_unicodeComposition(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object  = [skin toNSObjectAtIndex:1] ;
     NSString          *objString    = utf16Object.utf16string ;
@@ -453,7 +453,7 @@ static int utf16_unicodeComposition(lua_State *L) {
 ///
 ///  * this method follows the semantics of `utf8.codepoint` -- if a specified index is out of range, a lua error is generated.
 static int utf16_unitCharacter(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -497,7 +497,7 @@ static int utf16_unitCharacter(lua_State *L) {
 ///
 ///  * this method follows the semantics of `utf8.codepoint` -- if a specified index is out of range, a lua error is generated.
 static int utf16_composedCharacterRange(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -546,7 +546,7 @@ static int utf16_composedCharacterRange(lua_State *L) {
 /// Notes:
 ///  * For the purposes of this methif, a capitalized string is a string with the first character in each word changed to its corresponding uppercase value, and all remaining characters set to their corresponding lowercase values. A word is any sequence of characters delimited by spaces, tabs, or line terminators. Some common word delimiting punctuation isn’t considered, so this property may not generally produce the desired results for multiword strings.
 static int utf16_capitalize(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TSTRING | LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -575,7 +575,7 @@ static int utf16_capitalize(lua_State *L) {
 
 // documented in `init.lua`
 static int utf16_compare(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG,
                     LS_TANY,
                     LS_TNUMBER | LS_TINTEGER | LS_TSTRING | LS_TNIL | LS_TOPTIONAL,
@@ -650,7 +650,7 @@ static int utf16_compare(lua_State *L) {
 ///  * This method is the utf16 equivalent of lua's `string.upper`
 ///  * Case transformations aren’t guaranteed to be symmetrical or to produce strings of the same lengths as the originals.
 static int utf16_string_upper(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TSTRING | LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -695,7 +695,7 @@ static int utf16_string_upper(lua_State *L) {
 ///  * This method is the utf16 equivalent of lua's `string.lower`
 ///  * Case transformations aren’t guaranteed to be symmetrical or to produce strings of the same lengths as the originals.
 static int utf16_string_lower(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TSTRING | LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -736,7 +736,7 @@ static int utf16_string_lower(lua_State *L) {
 ///  * This method is the utf16 equivalent of lua's `string.len`
 ///  * Composed character sequences and surrogate pairs are made up of multiple UTF16 "characters"; see also [hs.text.utf16:characterCount](#characterCount) wihch offers more options.
 static int utf16_string_length(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     // when used as the metmethod __len, we may get "self" provided twice, so let's just check the first arg
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK | LS_TVARARG] ;
 
@@ -764,7 +764,7 @@ static int utf16_string_length(lua_State *L) {
 ///
 ///  * This method uses the specific indicies provided, which could result in a broken surrogate or composed character sequence at the begining or end of the substring. If this is a concern, use [hs.text.utf16:composedCharacterRange](#composedCharacterRange) to adjust the range values before invoking this method.
 static int utf16_string_sub(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -807,8 +807,8 @@ static int utf16_string_sub(lua_State *L) {
 /// Notes:
 ///  * This method is the utf16 equivalent of lua's `string.reverse`
 ///  * Surrogate pairs and composed character sequences are maintained, so the reversed object will be composed of valid UTF16 sequences (assuming, of course, that the original object was composed of valid UTF16 sequences)
-static int utf16_string_reverse(__unused lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+static int utf16_string_reverse(lua_State *L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK] ;
 
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
@@ -845,7 +845,7 @@ static int utf16_string_reverse(__unused lua_State *L) {
 ///    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
 ///    * Again, ***Lua pattern matching syntax will not work with this method.***
 static int utf16_string_match(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -889,7 +889,7 @@ static int utf16_string_match(lua_State *L) {
 ///    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
 ///    * Again, ***Lua pattern matching syntax will not work with this method.***
 static int utf16_string_find(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -961,7 +961,7 @@ static int utf16_string_find(lua_State *L) {
 ///      -- x will equal "lua-5.3.tar.gz"
 ///      ~~~
 static int utf16_string_gsub(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TANY, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -1144,7 +1144,7 @@ static int utf16_string_gsub(lua_State *L) {
 ///  * This method is the utf16 equivalent of lua's `utf8.codepoint` and follows the same semantics -- if a specified index is out of range, a lua error is generated.
 ///  * This method differs from [hs.text.uf16:unitCharacter](#unitCharacter) in that surrogate pairs will result in a single codepoint between U+010000 to U+10FFFF instead of two separate UTF16 characters.
 static int utf16_utf8_codepoint(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
@@ -1204,7 +1204,7 @@ static int utf16_utf8_codepoint(lua_State *L) {
 ///  * This method is similar to lua's `utf8.len` and follows the same semantics -- if a specified index is out of range, a lua error is generated.
 ///  * This method differs from [hs.text.uf16:len](#len) in that surrogate pairs count as one character and composed characters can optionally be considered a single character as well.
 static int utf16_utf8_len(lua_State *L) {
-    LuaSkin *skin              = [LuaSkin shared] ;
+    LuaSkin *skin              = [LuaSkin sharedWithState:L] ;
     int     iIdx               = 2 ;
     BOOL    charactersComposed = NO ;
     if (lua_type(L, 2) == LUA_TBOOLEAN) {
@@ -1289,7 +1289,7 @@ static int utf16_utf8_len(lua_State *L) {
 /// Notes:
 ///  * This method is the utf16 equivalent of lua's `utf8.offset`.
 static int utf16_utf8_offset(lua_State *L) {
-    LuaSkin *skin              = [LuaSkin shared] ;
+    LuaSkin *skin              = [LuaSkin sharedWithState:L] ;
     int     nIdx               = 2 ;
     BOOL    charactersComposed = NO ;
     if (lua_type(L, 2) == LUA_TBOOLEAN) {
@@ -1365,7 +1365,7 @@ static int utf16_utf8_offset(lua_State *L) {
 ///  * `toUnicodeName`        - converts characters other than printable ASCII to their Unicode character name in braces. e.g. “🐶🐮” transforms to "\N{DOG FACE}\N{COW FACE}". This transformation is reversible.
 ///  * `toXMLHex`             - transliterate characters other than printable ASCII to XML/HTML numeric entities. e.g. “❦” transforms to “&#x2766;”. This transformation is reversible.
 static int utf16_builtinTransforms(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     lua_newtable(L) ;
     [skin pushNSObject:NSStringTransformLatinToKatakana] ;      lua_setfield(L, -2, "latinToKatakana") ;
     [skin pushNSObject:NSStringTransformLatinToHiragana] ;      lua_setfield(L, -2, "latinToHiragana") ;
@@ -1419,7 +1419,7 @@ static int utf16_compareOptions(lua_State *L) {
 // delegates and blocks.
 
 static int pushHSTextUTF16Object(lua_State *L, id obj) {
-    LuaSkin *skin  = [LuaSkin shared] ;
+    LuaSkin *skin  = [LuaSkin sharedWithState:L] ;
     HSTextUTF16Object *value = obj ;
     if (value.selfRefCount == 0) {
         void** valuePtr = lua_newuserdata(L, sizeof(HSTextUTF16Object *)) ;
@@ -1434,7 +1434,7 @@ static int pushHSTextUTF16Object(lua_State *L, id obj) {
 }
 
 id toHSTextUTF16ObjectFromLua(lua_State *L, int idx) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSTextUTF16Object *value ;
     if (luaL_testudata(L, idx, UTF16_UD_TAG)) {
         value = get_objectFromUserdata(__bridge HSTextUTF16Object, L, idx, UTF16_UD_TAG) ;
@@ -1448,7 +1448,7 @@ id toHSTextUTF16ObjectFromLua(lua_State *L, int idx) {
 #pragma mark - Hammerspoon/Lua Infrastructure
 
 static int userdata_concat(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
 // can't get here if at least one of us isn't our userdata type
     HSTextUTF16Object *obj1 = luaL_testudata(L, 1, UTF16_UD_TAG) ? [skin luaObjectAtIndex:1 toClass:"HSTextUTF16Object"] : nil ;
     if (!obj1) {
@@ -1475,8 +1475,8 @@ static int userdata_concat(lua_State *L) {
     return 1 ;
 }
 
-static int userdata_tostring(__unused lua_State* L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+static int userdata_tostring(lua_State* L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSTextUTF16Object *obj  = [skin luaObjectAtIndex:1 toClass:"HSTextUTF16Object"] ;
     NSString          *text = obj.utf16string ;
     [skin pushNSObject:text] ;
@@ -1484,7 +1484,7 @@ static int userdata_tostring(__unused lua_State* L) {
 }
 
 static int userdata_common_compare_wrapper(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
 // can't get here if at least one of us isn't our userdata type
     HSTextUTF16Object *obj1 = luaL_testudata(L, 1, UTF16_UD_TAG) ? [skin luaObjectAtIndex:1 toClass:"HSTextUTF16Object"] : nil ;
     if (!obj1) {
@@ -1548,7 +1548,7 @@ static int userdata_gc(lua_State* L) {
     if (obj) {
         obj.selfRefCount-- ;
         if (obj.selfRefCount == 0) {
-            LuaSkin *skin = [LuaSkin shared] ;
+            LuaSkin *skin = [LuaSkin sharedWithState:L] ;
             obj.selfRef = [skin luaUnref:refTable ref:obj.selfRef] ;
             obj.utf16string = nil ;
             obj = nil ;
@@ -1617,7 +1617,7 @@ static luaL_Reg moduleLib[] = {
 // } ;
 
 int luaopen_hs_text_utf16(lua_State* L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     refTable = [skin registerLibraryWithObject:UTF16_UD_TAG
                                      functions:moduleLib
                                  metaFunctions:nil    // or module_metaLib
