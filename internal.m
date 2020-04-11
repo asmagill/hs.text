@@ -41,7 +41,7 @@ static int refTable = LUA_NOREF;
 /// Notes:
 ///  * The contents of `text` is stored exactly as provided, even if the specified encoding (or guessed encoding) is not valid for the entire contents of the data.
 static int text_new(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     NSData *rawData = nil ;
 
     if (lua_type(L, 1) == LUA_TSTRING) {
@@ -97,7 +97,7 @@ static int text_new(lua_State *L) {
 ///  * if no encoding is specified, the encoding will be determined by macOS when the file is read. If no encoding can be determined, the file will be read as if the encoding had been specified as [hs.text.encodingTypes.rawData](#encodingTypes)
 ///    * to identify the encoding determined, see [hs.text:encoding](#encoding)
 static int text_fromFile(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TSTRING, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     NSString         *path       = [skin toNSObjectAtIndex:1] ;
     BOOL             hasEncoding = lua_gettop(L) > 1 ;
@@ -157,7 +157,7 @@ static int text_fromFile(lua_State *L) {
 /// Notes:
 ///  * the name returned will match the name of one of the keys in [hs.text.encodingTypes](#encodingTypes) unless the system locale has changed since the module was first loaded.
 static int text_localizedEncodingName(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TNUMBER | LS_TINTEGER, LS_TBREAK] ;
     NSStringEncoding encoding = (NSStringEncoding)lua_tointeger(L, 1) ;
     // internally 0 is treated as if it were 1, but we're using it as a placeholder for unspecified
@@ -182,7 +182,7 @@ static int text_localizedEncodingName(lua_State *L) {
 /// Returns:
 ///  * the textObject, or nil and a string specifying the error
 static int text_saveToFile(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TSTRING, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextObject     *object     = [skin toNSObjectAtIndex:1] ;
     NSString         *path       = [skin toNSObjectAtIndex:2] ;
@@ -231,7 +231,7 @@ static int text_saveToFile(lua_State *L) {
 ///  * this method works with the raw data contents of the textObject and ignores the currently assigned encoding.
 ///  * the integer returned will correspond to an encoding defined in [hs.text.encodingTypes](#encodingTypes)
 static int text_guessEncoding(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextObject *object        = [skin toNSObjectAtIndex:1] ;
     BOOL         allowLossy     = (lua_gettop(L) > 1 && lua_type(L, 2) == LUA_TBOOLEAN) ? (BOOL)lua_toboolean(L, 2) : NO ;
@@ -266,7 +266,7 @@ static int text_guessEncoding(lua_State *L) {
 ///  * the integer returned will correspond to an encoding defined in [hs.text.encodingTypes](#encodingTypes)
 ///  * “Fastest” applies to retrieval of characters from the string. This encoding may not be space efficient. See also [hs.text:smallestEncoding](#smallestEncoding).
 static int text_fastestEncoding(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBREAK] ;
     HSTextObject *object = [skin toNSObjectAtIndex:1] ;
 
@@ -291,7 +291,7 @@ static int text_fastestEncoding(lua_State *L) {
 ///  * the integer returned will correspond to an encoding defined in [hs.text.encodingTypes](#encodingTypes)
 ///  * This encoding may not be the fastest for accessing characters, but is space-efficient. See also [hs.text:fastestEncoding](#fastestEncoding).
 static int text_smallestEncoding(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBREAK] ;
     HSTextObject *object = [skin toNSObjectAtIndex:1] ;
 
@@ -314,7 +314,7 @@ static int text_smallestEncoding(lua_State *L) {
 /// Notes:
 ///  * the integer returned will correspond to an encoding defined in [hs.text.encodingTypes](#encodingTypes)
 static int text_encoding(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBREAK] ;
     HSTextObject *object = [skin toNSObjectAtIndex:1] ;
     lua_pushinteger(L, (lua_Integer)object.encoding) ;
@@ -330,8 +330,8 @@ static int text_encoding(lua_State *L) {
 ///
 /// Returns:
 ///  * a lua string containing the raw data of the textObject
-static int text_raw(__unused lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+static int text_raw(lua_State *L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBREAK] ;
     HSTextObject *object = [skin toNSObjectAtIndex:1] ;
     [skin pushNSObject:object.contents] ;
@@ -352,7 +352,7 @@ static int text_raw(__unused lua_State *L) {
 ///  * this method works with the raw data contents of the textObject and ignores the currently assigned encoding.
 ///  * the encodings identified are ones for which the bytes of data can represent valid character or formatting sequences within the encoding -- the specific textual representation for each encoding may differ. See the notes for [hs.text:asEncoding](#asEncoding) for an example of a byte sequence which has very different textual meanings for different encodings.
 static int text_validEncodings(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextObject *object    = [skin toNSObjectAtIndex:1] ;
     BOOL         allowLossy = (lua_gettop(L) > 1) ? (BOOL)lua_toboolean(L, 2) : NO ;
@@ -404,7 +404,7 @@ static int text_validEncodings(lua_State *L) {
 ///           -- note the change in the length of both the text and the raw data, as well as the actual text represented. Factoring out the UTF16 BOM, the data length is still 4, like the original object.
 ///       ~~~
 static int text_asEncoding(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TNUMBER | LS_TINTEGER, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextObject     *object  = [skin toNSObjectAtIndex:1] ;
     NSStringEncoding encoding = (NSStringEncoding)lua_tointeger(L, 2) ;
@@ -447,7 +447,7 @@ static int text_asEncoding(lua_State *L) {
 ///  * for an encoding to be considered valid by the macOS, it must be able to be converted to an NSString object within the Objective-C runtime. The resulting string may or may not be an exact representation of the data present (i.e. it may be a lossy representation). See also [hs.text:encodingLossless](#encodingLossless).
 ///  * a textObject with an encoding of 0 (rawData) is always considered invalid (i.e. this method will return false)
 static int text_encodingValid(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBREAK] ;
     HSTextObject *object  = [skin toNSObjectAtIndex:1] ;
 
@@ -475,7 +475,7 @@ static int text_encodingValid(lua_State *L) {
 ///  * for an encoding to be considered lossless, no data may be dropped or changed when evaluating the data within the requirements of the encoding. See also [hs.text:encodingValid](#encodingValid).
 ///  * a textObject with an encoding of 0 (rawData) is always considered lossless (i.e. this method will return true)
 static int text_encodingLossless(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBREAK] ;
     HSTextObject *object  = [skin toNSObjectAtIndex:1] ;
 
@@ -509,7 +509,7 @@ static int text_encodingLossless(lua_State *L) {
 ///  * if the textObject's encoding is 0 (rawData), this method will return the number of bytes of data the textObject contains
 ///  * otherwise, the length will be the number of characters the data represents in its current encoding.
 static int text_length(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     // when used as the metmethod __len, we may get "self" provided twice, so let's just check the first arg
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBREAK | LS_TVARARG] ;
 
@@ -559,7 +559,7 @@ static int text_length(lua_State *L) {
 ///  * `WindowsCP1253`     - Microsoft Windows codepage 1253, encoding Greek characters.
 ///  * `WindowsCP1254`     - Microsoft Windows codepage 1254, encoding Turkish characters.
 static int text_encodingTypes(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     lua_newtable(L) ;
 
     // add our special built in encoding
@@ -606,7 +606,7 @@ static int text_encodingTypes(lua_State *L) {
 // delegates and blocks.
 
 static int pushHSTextObject(lua_State *L, id obj) {
-    LuaSkin *skin  = [LuaSkin shared] ;
+    LuaSkin *skin  = [LuaSkin sharedWithState:L] ;
     HSTextObject *value = obj;
     if (value.selfRefCount == 0) {
         void** valuePtr = lua_newuserdata(L, sizeof(HSTextObject *));
@@ -621,7 +621,7 @@ static int pushHSTextObject(lua_State *L, id obj) {
 }
 
 id toHSTextObjectFromLua(lua_State *L, int idx) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSTextObject *value ;
     if (luaL_testudata(L, idx, USERDATA_TAG)) {
         value = get_objectFromUserdata(__bridge HSTextObject, L, idx, USERDATA_TAG) ;
@@ -635,7 +635,7 @@ id toHSTextObjectFromLua(lua_State *L, int idx) {
 #pragma mark - Hammerspoon/Lua Infrastructure
 
 static int userdata_tostring(lua_State* L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
 //     HSTextObject *obj = [skin luaObjectAtIndex:1 toClass:"HSTextObject"] ;
     [skin pushNSObject:[NSString stringWithFormat:@"%s: (%p)", USERDATA_TAG, lua_topointer(L, 1)]] ;
     return 1 ;
@@ -645,7 +645,7 @@ static int userdata_eq(lua_State* L) {
 // can't get here if at least one of us isn't a userdata type, and we only care if both types are ours,
 // so use luaL_testudata before the macro causes a lua error
     if (luaL_testudata(L, 1, USERDATA_TAG) && luaL_testudata(L, 2, USERDATA_TAG)) {
-        LuaSkin *skin = [LuaSkin shared] ;
+        LuaSkin *skin = [LuaSkin sharedWithState:L] ;
         HSTextObject *obj1 = [skin luaObjectAtIndex:1 toClass:"HSTextObject"] ;
         HSTextObject *obj2 = [skin luaObjectAtIndex:2 toClass:"HSTextObject"] ;
         lua_pushboolean(L, [obj1.contents isEqualTo:obj2.contents]) ;
@@ -660,7 +660,7 @@ static int userdata_gc(lua_State* L) {
     if (obj) {
         obj.selfRefCount-- ;
         if (obj.selfRefCount == 0) {
-            LuaSkin *skin = [LuaSkin shared] ;
+            LuaSkin *skin = [LuaSkin sharedWithState:L] ;
             obj.selfRef = [skin luaUnref:refTable ref:obj.selfRef] ;
             obj.contents = nil ;
             obj = nil ;
@@ -714,7 +714,7 @@ static luaL_Reg moduleLib[] = {
 // };
 
 int luaopen_hs_text_internal(lua_State* L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     refTable = [skin registerLibraryWithObject:USERDATA_TAG
                                      functions:moduleLib
                                  metaFunctions:nil    // or module_metaLib
