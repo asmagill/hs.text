@@ -42,7 +42,7 @@ static int refTable = LUA_NOREF;
 
 // documented in  init.lua
 static int regex_new(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TSTRING, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     NSString                   *expression = [skin toNSObjectAtIndex:1] ;
     NSRegularExpressionOptions options     = (lua_gettop(L) > 1) ? (NSRegularExpressionOptions)(lua_tointeger(L, 2)) : 0 ;
@@ -69,8 +69,8 @@ static int regex_new(lua_State *L) {
 /// Notes:
 ///  * this would typically be used when crafting a larger template string for use with substitution methods and want to make sure that this sections is replaced *exactly* and not expanded based on expression captures.
 ///  * e.g. `hs.text.regex.escapedTemplate("$1")` returns `"\$1"`
-static int regex_escapedTemplateForString(__unused lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+static int regex_escapedTemplateForString(lua_State *L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TSTRING, LS_TBREAK] ;
     NSString *templateString = [skin toNSObjectAtIndex:1]  ;
 
@@ -91,8 +91,8 @@ static int regex_escapedTemplateForString(__unused lua_State *L) {
 /// Notes:
 ///  * this would typically be used when crafting a larger pattern string for use with [hs.text.regex.new](#new) and want to make sure that this sections is matched *exactly* and not treated as regular expression metacharacters.
 ///  * e.g. `hs.text.regex.escapedPattern("(N/A)")` returns `"\(N\/A\)"`
-static int regex_escapedPatternForString(__unused lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+static int regex_escapedPatternForString(lua_State *L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TSTRING, LS_TBREAK] ;
     NSString *patternString = [skin toNSObjectAtIndex:1]  ;
 
@@ -112,8 +112,8 @@ static int regex_escapedPatternForString(__unused lua_State *L) {
 ///
 /// Returns:
 ///  * a lua string
-static int regex_pattern(__unused lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+static int regex_pattern(lua_State *L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, REGEX_UD_TAG, LS_TBREAK] ;
     HSRegularExpression *regex = [skin toNSObjectAtIndex:1] ;
 
@@ -131,7 +131,7 @@ static int regex_pattern(__unused lua_State *L) {
 /// Returns:
 ///  * an integer containing logically OR'ed values from the [hs.text.regex.options](#options) constant specifying the options that were specified when this object was created.
 static int regex_options(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, REGEX_UD_TAG, LS_TBREAK] ;
     HSRegularExpression *regex = [skin toNSObjectAtIndex:1] ;
 
@@ -149,7 +149,7 @@ static int regex_options(lua_State *L) {
 /// Returns:
 ///  * an integer specifying the number of capture groups defined by the regular expression object.
 static int regex_captureCount(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, REGEX_UD_TAG, LS_TBREAK] ;
     HSRegularExpression *regex = [skin toNSObjectAtIndex:1] ;
 
@@ -157,7 +157,7 @@ static int regex_captureCount(lua_State *L) {
     return 1 ;
 }
 
-/// hs.tex.regex:matchWithCallback(text, callback, [options], [i], [j], [bg]) -> regexObject
+/// hs.text.regex:matchWithCallback(text, callback, [options], [i], [j], [bg]) -> regexObject
 /// Method
 /// Apply the regular expression to the provided text, invoking the callback for each match.
 ///
@@ -184,7 +184,7 @@ static int regex_captureCount(lua_State *L) {
 ///    * all indicies (parameters and callback values) are specified in terms of UTF16 "character" positions within the string and, depending upon the pattern, may break surrogate pairs or composed characters. See `hs.text.utf16:composedCharacterRange` to verify match and capture indicies if this might be an issue for your purposes.
 ///    * match and capture values are returned in the callback as `hs.text.utf16` objects
 static int regex_matchWithCallback(lua_State *L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, REGEX_UD_TAG, LS_TANY, LS_TFUNCTION, LS_TBREAK | LS_TVARARG] ;
     HSRegularExpression *regex       = [skin toNSObjectAtIndex:1] ;
     NSString            *textUTF16   = nil ;
@@ -299,6 +299,7 @@ static int regex_matchWithCallback(lua_State *L) {
 
     // now do the users bidding...
     dispatch_async(background ? dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0) : dispatch_get_main_queue(), ^(void){
+        LuaSkin *_skin = [LuaSkin sharedWithState:NULL] ;
         [regex enumerateMatchesInString:stringToEnumerate
                                 options:options
                                   range:NSMakeRange((NSUInteger)(i - 1), (NSUInteger)(j - (i - 1)))
@@ -306,9 +307,12 @@ static int regex_matchWithCallback(lua_State *L) {
 
         }] ;
         if (background) {
-            dispatch_sync(dispatch_get_main_queue(), ^(void){ [skin luaUnref:refTable ref:callbackFn] ; }) ;
+            dispatch_sync(dispatch_get_main_queue(), ^(void){
+                LuaSkin *__skin = [LuaSkin sharedWithState:NULL] ;
+                [__skin luaUnref:refTable ref:callbackFn] ;
+            }) ;
         } else {
-            [skin luaUnref:refTable ref:callbackFn] ;
+            [_skin luaUnref:refTable ref:callbackFn] ;
         }
         free(indiciesMap) ;
     }) ;
@@ -368,7 +372,7 @@ static int regex_matchingOptions(lua_State *L) {
 // delegates and blocks.
 
 static int pushHSRegularExpression(lua_State *L, id obj) {
-    LuaSkin *skin  = [LuaSkin shared] ;
+    LuaSkin *skin  = [LuaSkin sharedWithState:L] ;
     HSRegularExpression *value = obj;
     if (value.selfRefCount == 0) {
         void** valuePtr = lua_newuserdata(L, sizeof(HSRegularExpression *));
@@ -383,7 +387,7 @@ static int pushHSRegularExpression(lua_State *L, id obj) {
 }
 
 id toHSRegularExpressionFromLua(lua_State *L, int idx) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSRegularExpression *value ;
     if (luaL_testudata(L, idx, REGEX_UD_TAG)) {
         value = get_objectFromUserdata(__bridge HSRegularExpression, L, idx, REGEX_UD_TAG) ;
@@ -397,7 +401,7 @@ id toHSRegularExpressionFromLua(lua_State *L, int idx) {
 #pragma mark - Hammerspoon/Lua Infrastructure
 
 static int userdata_tostring(lua_State* L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSRegularExpression *obj = [skin luaObjectAtIndex:1 toClass:"HSRegularExpression"] ;
     NSString *title = obj.pattern ;
     [skin pushNSObject:[NSString stringWithFormat:@"%s: %@ (%p)", REGEX_UD_TAG, title, lua_topointer(L, 1)]] ;
@@ -408,7 +412,7 @@ static int userdata_eq(lua_State* L) {
 // can't get here if at least one of us isn't a userdata type, and we only care if both types are ours,
 // so use luaL_testudata before the macro causes a lua error
     if (luaL_testudata(L, 1, REGEX_UD_TAG) && luaL_testudata(L, 2, REGEX_UD_TAG)) {
-        LuaSkin *skin = [LuaSkin shared] ;
+        LuaSkin *skin = [LuaSkin sharedWithState:L] ;
         HSRegularExpression *obj1 = [skin luaObjectAtIndex:1 toClass:"HSRegularExpression"] ;
         HSRegularExpression *obj2 = [skin luaObjectAtIndex:2 toClass:"HSRegularExpression"] ;
         lua_pushboolean(L, ([obj1.pattern isEqualToString:obj2.pattern] && (obj1.options == obj2.options))) ;
@@ -423,7 +427,7 @@ static int userdata_gc(lua_State* L) {
     if (obj) {
         obj.selfRefCount-- ;
         if (obj.selfRefCount == 0) {
-            LuaSkin *skin = [LuaSkin shared] ;
+            LuaSkin *skin = [LuaSkin sharedWithState:L] ;
             obj.selfRef = [skin luaUnref:refTable ref:obj.selfRef] ;
             obj = nil ;
         }
@@ -470,7 +474,7 @@ static luaL_Reg moduleLib[] = {
 
 // NOTE: ** Make sure to change luaopen_..._internal **
 int luaopen_hs_text_regex(lua_State* L) {
-    LuaSkin *skin = [LuaSkin shared] ;
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     refTable = [skin registerLibraryWithObject:REGEX_UD_TAG
                                      functions:moduleLib
                                  metaFunctions:nil    // or module_metaLib
