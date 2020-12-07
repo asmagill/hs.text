@@ -61,7 +61,7 @@ static int text_new(lua_State *L) {
         encoding = (NSStringEncoding)lua_tointeger(L, 2) ;
     } else {
         [skin checkArgs:LS_TANY, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBREAK] ;
-        BOOL     allowLossy     = (lua_gettop(L) > 1 && lua_type(L, 2) == LUA_TBOOLEAN) ? (BOOL)lua_toboolean(L, 2) : NO ;
+        BOOL     allowLossy     = (lua_gettop(L) > 1 && lua_type(L, 2) == LUA_TBOOLEAN) ? lua_toboolean(L, 2) : NO ;
         BOOL     includeWindows = (lua_gettop(L) > 2 && lua_type(L, 3) == LUA_TBOOLEAN) ? (BOOL)lua_toboolean(L, 3) : NO ;
         NSString *string        = nil ;
         BOOL     usedLossy      = NO ;
