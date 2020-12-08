@@ -103,6 +103,7 @@ install: install-$(shell uname -m)
 install-lua: $(LUAFILES)
 	mkdir -p $(PREFIX)/$(MODPATH)/$(MODULE)
 	install -m 0644 $(LUAFILES) $(PREFIX)/$(MODPATH)/$(MODULE)
+	test -f docs.json && install -m 0644 docs.json $(PREFIX)/$(MODPATH)/$(MODULE) || echo "No docs.json file to install"
 
 install-x86_64: verify install-lua $(SOFILES_x86_64)
 	mkdir -p $(PREFIX)/$(MODPATH)/$(MODULE)
