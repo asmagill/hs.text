@@ -12,7 +12,7 @@
 
 #import "text.h"
 
-static int refTable;
+static LSRefTable refTable;
 static NSMutableArray* delegates;
 
 // Convert a response body to data we can send to Lua
@@ -313,7 +313,7 @@ int luaopen_hs_text_http(lua_State* L) {
     LuaSkin *skin = [LuaSkin sharedWithState:L];
 
     delegates = [[NSMutableArray alloc] init];
-    refTable = [skin registerLibrary:httplib metaFunctions:metalib];
+    refTable = [skin registerLibrary:USERDATA_TAG functions:httplib metaFunctions:metalib];
 
     return 1;
 }
