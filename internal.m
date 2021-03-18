@@ -3,7 +3,7 @@
 
 #import "text.h"
 
-static int refTable = LUA_NOREF;
+static LSRefTable refTable = LUA_NOREF;
 
 #pragma mark - Support Functions and Classes
 
@@ -61,8 +61,8 @@ static int text_new(lua_State *L) {
         encoding = (NSStringEncoding)lua_tointeger(L, 2) ;
     } else {
         [skin checkArgs:LS_TANY, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBREAK] ;
-        BOOL     allowLossy     = (lua_gettop(L) > 1 && lua_type(L, 2) == LUA_TBOOLEAN) ? lua_toboolean(L, 2) : NO ;
-        BOOL     includeWindows = (lua_gettop(L) > 2 && lua_type(L, 3) == LUA_TBOOLEAN) ? (BOOL)lua_toboolean(L, 3) : NO ;
+        BOOL     allowLossy     = (lua_gettop(L) > 1 && lua_type(L, 2) == LUA_TBOOLEAN) ? (BOOL)(lua_toboolean(L, 2)) : NO ;
+        BOOL     includeWindows = (lua_gettop(L) > 2 && lua_type(L, 3) == LUA_TBOOLEAN) ? (BOOL)(lua_toboolean(L, 3)) : NO ;
         NSString *string        = nil ;
         BOOL     usedLossy      = NO ;
 
@@ -234,8 +234,8 @@ static int text_guessEncoding(lua_State *L) {
     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBOOLEAN | LS_TNIL | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextObject *object        = [skin toNSObjectAtIndex:1] ;
-    BOOL         allowLossy     = (lua_gettop(L) > 1 && lua_type(L, 2) == LUA_TBOOLEAN) ? (BOOL)lua_toboolean(L, 2) : NO ;
-    BOOL         includeWindows = (lua_gettop(L) > 2 && lua_type(L, 3) == LUA_TBOOLEAN) ? (BOOL)lua_toboolean(L, 3) : NO ;
+    BOOL         allowLossy     = (lua_gettop(L) > 1 && lua_type(L, 2) == LUA_TBOOLEAN) ? (BOOL)(lua_toboolean(L, 2)) : NO ;
+    BOOL         includeWindows = (lua_gettop(L) > 2 && lua_type(L, 3) == LUA_TBOOLEAN) ? (BOOL)(lua_toboolean(L, 3)) : NO ;
     NSString     *string        = nil ;
     BOOL         usedLossy      = NO ;
 
@@ -355,7 +355,7 @@ static int text_validEncodings(lua_State *L) {
     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextObject *object    = [skin toNSObjectAtIndex:1] ;
-    BOOL         allowLossy = (lua_gettop(L) > 1) ? (BOOL)lua_toboolean(L, 2) : NO ;
+    BOOL         allowLossy = (lua_gettop(L) > 1) ? (BOOL)(lua_toboolean(L, 2)) : NO ;
 
     lua_newtable(L) ;
 
@@ -408,7 +408,7 @@ static int text_asEncoding(lua_State *L) {
     [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TNUMBER | LS_TINTEGER, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextObject     *object  = [skin toNSObjectAtIndex:1] ;
     NSStringEncoding encoding = (NSStringEncoding)lua_tointeger(L, 2) ;
-    BOOL             lossy    = (lua_gettop(L) == 3) ? (BOOL)lua_toboolean(L, 3) : NO ;
+    BOOL             lossy    = (lua_gettop(L) == 3) ? (BOOL)(lua_toboolean(L, 3)) : NO ;
 
     HSTextObject     *newObject      = nil ;
     NSStringEncoding initialEncoding = (object.encoding != 0) ? object.encoding : encoding ;

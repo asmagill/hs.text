@@ -21,7 +21,7 @@
 ///
 /// In addition to the lua `string` and `utf8` functions, additional functions provided by the macOS are included. This includes, but is not limited to, Unicode normalization and ICU transforms.
 
-static int refTable = LUA_NOREF ;
+static LSRefTable refTable = LUA_NOREF ;
 
 #define get_objectFromUserdata(objType, L, idx, tag) (objType*)*((void**)luaL_checkudata(L, idx, tag))
 
@@ -45,7 +45,7 @@ BOOL inMiddleOfChar(NSString *string, NSUInteger idx, BOOL charactersComposed) {
     if (idx == string.length) {
         return NO ;
     } else {
-        BOOL answer = (BOOL)CFStringIsSurrogateLowCharacter([string characterAtIndex:idx]) ;
+        BOOL answer = (BOOL)(CFStringIsSurrogateLowCharacter([string characterAtIndex:idx])) ;
         if (!answer && charactersComposed) {
             NSRange range = [string rangeOfComposedCharacterSequenceAtIndex:idx] ;
             answer = (idx != range.location) ;
@@ -117,7 +117,7 @@ static int combinedFindAndMatch(lua_State *L, NSString *objString, NSString *pat
 static int utf16_new(lua_State *L) {
     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     NSData           *input   = [NSData data] ;
-    BOOL             lossy    = (lua_gettop(L) > 1) ? (BOOL)lua_toboolean(L, 2) : NO ;
+    BOOL             lossy    = (lua_gettop(L) > 1) ? (BOOL)(lua_toboolean(L, 2)) : NO ;
     NSStringEncoding encoding = NSUTF8StringEncoding ;
 
     if (lua_type(L, 1) == LUA_TUSERDATA) {
@@ -355,7 +355,7 @@ static int utf16_transform(lua_State *L) {
     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
     NSString          *objString   = utf16Object.utf16string ;
     NSString          *transform   = [skin toNSObjectAtIndex:2] ;
-    BOOL              reverse      = (lua_gettop(L) == 3) ? (BOOL)lua_toboolean(L, 3) : NO ;
+    BOOL              reverse      = (lua_gettop(L) == 3) ? (BOOL)(lua_toboolean(L, 3)) : NO ;
 
     NSMutableString *resultString  = [objString mutableCopy] ;
     NSRange         range          = NSMakeRange(0, resultString.length) ;
@@ -396,7 +396,7 @@ static int utf16_unicodeDecomposition(lua_State *L) {
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object  = [skin toNSObjectAtIndex:1] ;
     NSString          *objString    = utf16Object.utf16string ;
-    BOOL              compatibility = (lua_gettop(L) > 1) ? (BOOL)lua_toboolean(L, 2) : NO ;
+    BOOL              compatibility = (lua_gettop(L) > 1) ? (BOOL)(lua_toboolean(L, 2)) : NO ;
 
     NSString *newString = compatibility ? objString.decomposedStringWithCompatibilityMapping
                                         : objString.decomposedStringWithCanonicalMapping ;
@@ -427,7 +427,7 @@ static int utf16_unicodeComposition(lua_State *L) {
     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
     HSTextUTF16Object *utf16Object  = [skin toNSObjectAtIndex:1] ;
     NSString          *objString    = utf16Object.utf16string ;
-    BOOL              compatibility = (lua_gettop(L) > 1) ? (BOOL)lua_toboolean(L, 2) : NO ;
+    BOOL              compatibility = (lua_gettop(L) > 1) ? (BOOL)(lua_toboolean(L, 2)) : NO ;
 
     NSString *newString = compatibility ? objString.precomposedStringWithCompatibilityMapping
                                         : objString.precomposedStringWithCanonicalMapping ;
@@ -1210,7 +1210,7 @@ static int utf16_utf8_len(lua_State *L) {
     if (lua_type(L, 2) == LUA_TBOOLEAN) {
         [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBOOLEAN, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL,  LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
         iIdx++ ;
-        charactersComposed = (BOOL)lua_toboolean(L, 2) ;
+        charactersComposed = (BOOL)(lua_toboolean(L, 2)) ;
     } else {
         [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL,  LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     }
@@ -1295,7 +1295,7 @@ static int utf16_utf8_offset(lua_State *L) {
     if (lua_type(L, 2) == LUA_TBOOLEAN) {
         [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TBOOLEAN, LS_TNUMBER | LS_TINTEGER,  LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
         nIdx++ ;
-        charactersComposed = (BOOL)lua_toboolean(L, 2) ;
+        charactersComposed = (BOOL)(lua_toboolean(L, 2)) ;
     } else {
         [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TNUMBER | LS_TINTEGER,  LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
     }
