@@ -217,7 +217,7 @@ static int regex_matchWithCallback(lua_State *L) {
         case 4:
             [skin checkArgs:LS_TANY, LS_TANY, LS_TFUNCTION, LS_TNUMBER | LS_TINTEGER | LS_TBOOLEAN, LS_TBREAK] ;
             if (lua_type(L, 4) == LUA_TBOOLEAN) {
-                background = (BOOL)lua_toboolean(L, 4) ;
+                background = (BOOL)(lua_toboolean(L, 4)) ;
             } else {
                 i          = lua_tointeger(L, 4) ;
             }
@@ -226,7 +226,7 @@ static int regex_matchWithCallback(lua_State *L) {
             [skin checkArgs:LS_TANY, LS_TANY, LS_TFUNCTION, LS_TNUMBER | LS_TINTEGER, LS_TNUMBER | LS_TINTEGER | LS_TBOOLEAN, LS_TBREAK] ;
             i = lua_tointeger(L, 4) ;
             if (lua_type(L, 5) == LUA_TBOOLEAN) {
-                background = (BOOL)lua_toboolean(L, 5) ;
+                background = (BOOL)(lua_toboolean(L, 5)) ;
             } else {
                 j          = lua_tointeger(L, 5) ;
             }
@@ -236,7 +236,7 @@ static int regex_matchWithCallback(lua_State *L) {
             [skin checkArgs:LS_TANY, LS_TANY, LS_TFUNCTION, LS_TNUMBER | LS_TINTEGER, LS_TNUMBER | LS_TINTEGER, LS_TBOOLEAN, LS_TBREAK] ;
             i          = lua_tointeger(L, 4) ;
             j          = lua_tointeger(L, 5) ;
-            background = (BOOL)lua_toboolean(L, 6) ;
+            background = (BOOL)(lua_toboolean(L, 6)) ;
     }
 
     // adjust indicies per lua standards
