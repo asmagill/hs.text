@@ -53,54 +53,54 @@ BOOL inMiddleOfChar(NSString *string, NSUInteger idx, BOOL charactersComposed) {
     }
 }
 
-static int combinedFindAndMatch(lua_State *L, NSString *objString, NSString *pattern, lua_Integer idx, BOOL isFind) {
-    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
-
-    NSRegularExpressionOptions options = 0 ;
-    if (isFind && (lua_gettop(L) == 4) && lua_toboolean(L, 4)) options = NSRegularExpressionIgnoreMetacharacters ;
-
-// NOTE: Do we want/need to convert lua style regular expression codes (e.g. %d instead of \d)? If so, do it here...
-
-    NSError             *error     = nil ;
-    NSRegularExpression *patternRE = [NSRegularExpression regularExpressionWithPattern:pattern
-                                                                               options:options
-                                                                                 error:&error] ;
-    if (error)  return luaL_argerror(L, 2, error.localizedDescription.UTF8String) ;
-
-    idx-- ;
-    NSRange searchRange = NSMakeRange((NSUInteger)idx, objString.length - (NSUInteger)idx) ;
-    NSTextCheckingResult *searchResults = [patternRE firstMatchInString:objString
-                                                                options:0
-                                                                  range:searchRange] ;
-    int returning = 0 ;
-    if (searchResults) {
-        if (isFind) {
-            lua_pushinteger(L, (lua_Integer)(searchResults.range.location + 1)) ;
-            lua_pushinteger(L, (lua_Integer)(searchResults.range.location + searchResults.range.length)) ;
-            returning = 2 ;
-        }
-        if (searchResults.numberOfRanges > 1) {
-            for (NSUInteger a = 1 ; a < searchResults.numberOfRanges ; a++) {
-                NSRange componentRange = [searchResults rangeAtIndex:a] ;
-                if (componentRange.location == NSNotFound) {
-                    lua_pushnil(L) ;
-                } else {
-                    HSTextUTF16Object *newObject = [[HSTextUTF16Object alloc] initWithString:[objString substringWithRange:componentRange]] ;
-                    [skin pushNSObject:newObject] ;
-                }
-            }
-            returning = returning + (int)(searchResults.numberOfRanges - 1) ;
-        } else if (!isFind) {
-            HSTextUTF16Object *newObject = [[HSTextUTF16Object alloc] initWithString:[objString substringWithRange:searchResults.range]] ;
-            [skin pushNSObject:newObject] ;
-            returning = 1 ;
-        }
-    } else {
-        lua_pushnil(L) ;
-        returning = 1 ;
-    }
-    return returning ;
-}
+// static int combinedFindAndMatch(lua_State *L, NSString *objString, NSString *pattern, lua_Integer idx, BOOL isFind) {
+//     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
+//
+//     NSRegularExpressionOptions options = 0 ;
+//     if (isFind && (lua_gettop(L) == 4) && lua_toboolean(L, 4)) options = NSRegularExpressionIgnoreMetacharacters ;
+//
+// // NOTE: Do we want/need to convert lua style regular expression codes (e.g. %d instead of \d)? If so, do it here...
+//
+//     NSError             *error     = nil ;
+//     NSRegularExpression *patternRE = [NSRegularExpression regularExpressionWithPattern:pattern
+//                                                                                options:options
+//                                                                                  error:&error] ;
+//     if (error)  return luaL_argerror(L, 2, error.localizedDescription.UTF8String) ;
+//
+//     idx-- ;
+//     NSRange searchRange = NSMakeRange((NSUInteger)idx, objString.length - (NSUInteger)idx) ;
+//     NSTextCheckingResult *searchResults = [patternRE firstMatchInString:objString
+//                                                                 options:0
+//                                                                   range:searchRange] ;
+//     int returning = 0 ;
+//     if (searchResults) {
+//         if (isFind) {
+//             lua_pushinteger(L, (lua_Integer)(searchResults.range.location + 1)) ;
+//             lua_pushinteger(L, (lua_Integer)(searchResults.range.location + searchResults.range.length)) ;
+//             returning = 2 ;
+//         }
+//         if (searchResults.numberOfRanges > 1) {
+//             for (NSUInteger a = 1 ; a < searchResults.numberOfRanges ; a++) {
+//                 NSRange componentRange = [searchResults rangeAtIndex:a] ;
+//                 if (componentRange.location == NSNotFound) {
+//                     lua_pushnil(L) ;
+//                 } else {
+//                     HSTextUTF16Object *newObject = [[HSTextUTF16Object alloc] initWithString:[objString substringWithRange:componentRange]] ;
+//                     [skin pushNSObject:newObject] ;
+//                 }
+//             }
+//             returning = returning + (int)(searchResults.numberOfRanges - 1) ;
+//         } else if (!isFind) {
+//             HSTextUTF16Object *newObject = [[HSTextUTF16Object alloc] initWithString:[objString substringWithRange:searchResults.range]] ;
+//             [skin pushNSObject:newObject] ;
+//             returning = 1 ;
+//         }
+//     } else {
+//         lua_pushnil(L) ;
+//         returning = 1 ;
+//     }
+//     return returning ;
+// }
 
 #pragma mark - Module Functions
 /// hs.text.utf16.new(text, [lossy]) -> utf16TextObject
@@ -828,92 +828,92 @@ static int utf16_string_reverse(lua_State *L) {
     return 1 ;
 }
 
-/// hs.text.utf16:match(pattern, [i]) -> match(es) | nil
-/// Method
-/// Looks for the first match of a pattern within the utf16TextObject and returns it
-///
-/// Paramters:
-///  * `pattern` - a lua string or utf16TextObject specifying the pattern for the match. See *Notes*.
-///  * `i`       - an optional integer, default 1, specifying the index of the utf16TextObject where the search for the pattern should begin; negative indicies are counted from the end of the object.
-///
-/// Returns:
-///  * If a match is found and the pattern specifies captures, returns a new utf16TextObjects for each capture; if no captures are specified, returns the entire match as a new utf16TextObject. If no matche is found, returns nil.
-///
-/// Notes:
-///  * This method is the utf16 equivalent of lua's `string.match` with one important caveat:
-///    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
-///    * Again, ***Lua pattern matching syntax will not work with this method.***
-static int utf16_string_match(lua_State *L) {
-    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
-    [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
-    HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
-    NSString          *objString   = utf16Object.utf16string ;
+// /// hs.text.utf16:match(pattern, [i]) -> match(es) | nil
+// /// Method
+// /// Looks for the first match of a pattern within the utf16TextObject and returns it
+// ///
+// /// Paramters:
+// ///  * `pattern` - a lua string or utf16TextObject specifying the pattern for the match. See *Notes*.
+// ///  * `i`       - an optional integer, default 1, specifying the index of the utf16TextObject where the search for the pattern should begin; negative indicies are counted from the end of the object.
+// ///
+// /// Returns:
+// ///  * If a match is found and the pattern specifies captures, returns a new utf16TextObjects for each capture; if no captures are specified, returns the entire match as a new utf16TextObject. If no matche is found, returns nil.
+// ///
+// /// Notes:
+// ///  * This method is the utf16 equivalent of lua's `string.match` with one important caveat:
+// ///    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
+// ///    * Again, ***Lua pattern matching syntax will not work with this method.***
+// static int utf16_string_match(lua_State *L) {
+//     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
+//     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
+//     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
+//     NSString          *objString   = utf16Object.utf16string ;
+//
+//     NSString          *pattern     = [NSString stringWithUTF8String:luaL_tolstring(L, 2, NULL)] ;
+//     lua_pop(L, 1) ;
+//     if (lua_type(L, 2) == LUA_TUSERDATA) {
+//         [skin checkArgs:LS_TANY, LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK | LS_TVARARG] ;
+//         HSTextUTF16Object *patternObject = [skin toNSObjectAtIndex:2] ;
+//         pattern = patternObject.utf16string ;
+//     }
+//
+//     lua_Integer       i            = (lua_gettop(L) > 2) ? lua_tointeger(L, 3) : 1 ;
+//     lua_Integer       length       = (lua_Integer)objString.length ;
+//     // adjust indicies per lua standards
+//     if (i < 0) i = length + 1 + i ; // negative indicies are from string end
+//     if (i < 1) i = 1 ;              // if i still less than 1, force to 1
+//
+//     if (i > length) {
+//         lua_pushnil(L) ;
+//         return 1 ;
+//     }
+//
+//     return combinedFindAndMatch(L, objString, pattern, i, NO) ;
+// }
 
-    NSString          *pattern     = [NSString stringWithUTF8String:luaL_tolstring(L, 2, NULL)] ;
-    lua_pop(L, 1) ;
-    if (lua_type(L, 2) == LUA_TUSERDATA) {
-        [skin checkArgs:LS_TANY, LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK | LS_TVARARG] ;
-        HSTextUTF16Object *patternObject = [skin toNSObjectAtIndex:2] ;
-        pattern = patternObject.utf16string ;
-    }
-
-    lua_Integer       i            = (lua_gettop(L) > 2) ? lua_tointeger(L, 3) : 1 ;
-    lua_Integer       length       = (lua_Integer)objString.length ;
-    // adjust indicies per lua standards
-    if (i < 0) i = length + 1 + i ; // negative indicies are from string end
-    if (i < 1) i = 1 ;              // if i still less than 1, force to 1
-
-    if (i > length) {
-        lua_pushnil(L) ;
-        return 1 ;
-    }
-
-    return combinedFindAndMatch(L, objString, pattern, i, NO) ;
-}
-
-/// hs.text.utf16:find(pattern, [i], [plain]) -> start, end, [captures...] | nil
-/// Method
-/// Looks for the first match of a pattern within the utf16TextObject and returns the indicies of the match
-///
-/// Paramters:
-///  * `pattern` - a lua string or utf16TextObject specifying the pattern for the match. See *Notes*.
-///  * `i`       - an optional integer, default 1, specifying the index of the utf16TextObject where the search for the pattern should begin; negative indicies are counted from the end of the object.
-///  * `plain`   - an optional boolean, default `false`, specifying that the pattern should be matched *exactly* (true) instead of treated as a regular expression (false).
-///
-/// Returns:
-///  * If a match is found, returns the starting and ending indicies of the match (as integers); if captures are specified in the pattern, also returns a new utf16TextObjects for each capture after the indicies. If no match is found, returns nil.
-///
-/// Notes:
-///  * This method is the utf16 equivalent of lua's `string.find` with one important caveat:
-///    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
-///    * Again, ***Lua pattern matching syntax will not work with this method.***
-static int utf16_string_find(lua_State *L) {
-    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
-    [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
-    HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
-    NSString          *objString   = utf16Object.utf16string ;
-
-    NSString          *pattern     = [NSString stringWithUTF8String:luaL_tolstring(L, 2, NULL)] ;
-    lua_pop(L, 1) ;
-    if (lua_type(L, 2) == LUA_TUSERDATA) {
-        [skin checkArgs:LS_TANY, LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK | LS_TVARARG] ;
-        HSTextUTF16Object *patternObject = [skin toNSObjectAtIndex:2] ;
-        pattern = patternObject.utf16string ;
-    }
-
-    lua_Integer       i            = (lua_gettop(L) > 2) ? lua_tointeger(L, 3) : 1 ;
-    lua_Integer       length       = (lua_Integer)objString.length ;
-    // adjust indicies per lua standards
-    if (i < 0) i = length + 1 + i ; // negative indicies are from string end
-    if (i < 1) i = 1 ;              // if i still less than 1, force to 1
-
-    if (i > length) {
-        lua_pushnil(L) ;
-        return 1 ;
-    }
-
-    return combinedFindAndMatch(L, objString, pattern, i, YES) ;
-}
+// /// hs.text.utf16:find(pattern, [i], [plain]) -> start, end, [captures...] | nil
+// /// Method
+// /// Looks for the first match of a pattern within the utf16TextObject and returns the indicies of the match
+// ///
+// /// Paramters:
+// ///  * `pattern` - a lua string or utf16TextObject specifying the pattern for the match. See *Notes*.
+// ///  * `i`       - an optional integer, default 1, specifying the index of the utf16TextObject where the search for the pattern should begin; negative indicies are counted from the end of the object.
+// ///  * `plain`   - an optional boolean, default `false`, specifying that the pattern should be matched *exactly* (true) instead of treated as a regular expression (false).
+// ///
+// /// Returns:
+// ///  * If a match is found, returns the starting and ending indicies of the match (as integers); if captures are specified in the pattern, also returns a new utf16TextObjects for each capture after the indicies. If no match is found, returns nil.
+// ///
+// /// Notes:
+// ///  * This method is the utf16 equivalent of lua's `string.find` with one important caveat:
+// ///    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
+// ///    * Again, ***Lua pattern matching syntax will not work with this method.***
+// static int utf16_string_find(lua_State *L) {
+//     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
+//     [skin checkArgs:LS_TUSERDATA, UTF16_UD_TAG, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
+//     HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:1] ;
+//     NSString          *objString   = utf16Object.utf16string ;
+//
+//     NSString          *pattern     = [NSString stringWithUTF8String:luaL_tolstring(L, 2, NULL)] ;
+//     lua_pop(L, 1) ;
+//     if (lua_type(L, 2) == LUA_TUSERDATA) {
+//         [skin checkArgs:LS_TANY, LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK | LS_TVARARG] ;
+//         HSTextUTF16Object *patternObject = [skin toNSObjectAtIndex:2] ;
+//         pattern = patternObject.utf16string ;
+//     }
+//
+//     lua_Integer       i            = (lua_gettop(L) > 2) ? lua_tointeger(L, 3) : 1 ;
+//     lua_Integer       length       = (lua_Integer)objString.length ;
+//     // adjust indicies per lua standards
+//     if (i < 0) i = length + 1 + i ; // negative indicies are from string end
+//     if (i < 1) i = 1 ;              // if i still less than 1, force to 1
+//
+//     if (i > length) {
+//         lua_pushnil(L) ;
+//         return 1 ;
+//     }
+//
+//     return combinedFindAndMatch(L, objString, pattern, i, YES) ;
+// }
 
 /// hs.text.utf16:gsub(pattern, replacement, [n]) -> utf16TextObject, count
 /// Method
@@ -1573,8 +1573,8 @@ static const luaL_Reg userdata_metaLib[] = {
     {"len",                    utf16_string_length},
     {"sub",                    utf16_string_sub},
     {"reverse",                utf16_string_reverse},
-    {"match",                  utf16_string_match},
-    {"find",                   utf16_string_find},
+//     {"match",                  utf16_string_match},
+//     {"find",                   utf16_string_find},
     {"gsub",                   utf16_string_gsub},
 
     {"codepoint",              utf16_utf8_codepoint},
