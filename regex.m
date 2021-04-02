@@ -30,7 +30,6 @@ static int refTable = LUA_NOREF;
         [LuaSkin logError:[NSString stringWithFormat:@"%s - initWithPattern:%@ options:%lu error:%@", REGEX_UD_TAG, pattern, options, error.localizedDescription]] ;
     }
     if (self) {
-        _selfRef      = LUA_NOREF ;
         _selfRefCount = 0 ;
     }
     return self ;
@@ -374,15 +373,11 @@ static int regex_matchingOptions(lua_State *L) {
 static int pushHSRegularExpression(lua_State *L, id obj) {
     LuaSkin *skin  = [LuaSkin sharedWithState:L] ;
     HSRegularExpression *value = obj;
-    if (value.selfRefCount == 0) {
-        void** valuePtr = lua_newuserdata(L, sizeof(HSRegularExpression *));
-        *valuePtr = (__bridge_retained void *)value;
-        luaL_getmetatable(L, REGEX_UD_TAG);
-        lua_setmetatable(L, -2);
-        value.selfRef = [skin luaRef:refTable] ;
-    }
     value.selfRefCount++ ;
-    [skin pushLuaRef:refTable ref:value.selfRef] ;
+    void** valuePtr = lua_newuserdata(L, sizeof(HSRegularExpression *));
+    *valuePtr = (__bridge_retained void *)value;
+    luaL_getmetatable(L, REGEX_UD_TAG);
+    lua_setmetatable(L, -2);
     return 1;
 }
 
@@ -427,8 +422,6 @@ static int userdata_gc(lua_State* L) {
     if (obj) {
         obj.selfRefCount-- ;
         if (obj.selfRefCount == 0) {
-            LuaSkin *skin = [LuaSkin sharedWithState:L] ;
-            obj.selfRef = [skin luaUnref:refTable ref:obj.selfRef] ;
             obj = nil ;
         }
     }

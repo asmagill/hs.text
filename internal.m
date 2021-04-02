@@ -13,7 +13,6 @@ static LSRefTable refTable = LUA_NOREF;
     self = [super init] ;
     if (self) {
         _contents     = data ;
-        _selfRef      = LUA_NOREF ;
         _selfRefCount = 0 ;
         _encoding    = encoding ;
     }
@@ -606,17 +605,12 @@ static int text_encodingTypes(lua_State *L) {
 // delegates and blocks.
 
 static int pushHSTextObject(lua_State *L, id obj) {
-    LuaSkin *skin  = [LuaSkin sharedWithState:L] ;
     HSTextObject *value = obj;
-    if (value.selfRefCount == 0) {
-        void** valuePtr = lua_newuserdata(L, sizeof(HSTextObject *));
-        *valuePtr = (__bridge_retained void *)value;
-        luaL_getmetatable(L, USERDATA_TAG);
-        lua_setmetatable(L, -2);
-        value.selfRef = [skin luaRef:refTable] ;
-    }
     value.selfRefCount++ ;
-    [skin pushLuaRef:refTable ref:value.selfRef] ;
+    void** valuePtr = lua_newuserdata(L, sizeof(HSTextObject *));
+    *valuePtr = (__bridge_retained void *)value;
+    luaL_getmetatable(L, USERDATA_TAG);
+    lua_setmetatable(L, -2);
     return 1;
 }
 
@@ -660,8 +654,6 @@ static int userdata_gc(lua_State* L) {
     if (obj) {
         obj.selfRefCount-- ;
         if (obj.selfRefCount == 0) {
-            LuaSkin *skin = [LuaSkin sharedWithState:L] ;
-            obj.selfRef = [skin luaUnref:refTable ref:obj.selfRef] ;
             obj.contents = nil ;
             obj = nil ;
         }

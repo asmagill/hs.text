@@ -33,7 +33,6 @@ static LSRefTable refTable = LUA_NOREF ;
     self = [super init] ;
     if (self) {
         _utf16string  = string ;
-        _selfRef      = LUA_NOREF ;
         _selfRefCount = 0 ;
     }
     return self ;
@@ -1419,17 +1418,12 @@ static int utf16_compareOptions(lua_State *L) {
 // delegates and blocks.
 
 static int pushHSTextUTF16Object(lua_State *L, id obj) {
-    LuaSkin *skin  = [LuaSkin sharedWithState:L] ;
     HSTextUTF16Object *value = obj ;
-    if (value.selfRefCount == 0) {
-        void** valuePtr = lua_newuserdata(L, sizeof(HSTextUTF16Object *)) ;
-        *valuePtr = (__bridge_retained void *)value ;
-        luaL_getmetatable(L, UTF16_UD_TAG) ;
-        lua_setmetatable(L, -2) ;
-        value.selfRef = [skin luaRef:refTable] ;
-    }
     value.selfRefCount++ ;
-    [skin pushLuaRef:refTable ref:value.selfRef] ;
+    void** valuePtr = lua_newuserdata(L, sizeof(HSTextUTF16Object *)) ;
+    *valuePtr = (__bridge_retained void *)value ;
+    luaL_getmetatable(L, UTF16_UD_TAG) ;
+    lua_setmetatable(L, -2) ;
     return 1 ;
 }
 
@@ -1548,8 +1542,6 @@ static int userdata_gc(lua_State* L) {
     if (obj) {
         obj.selfRefCount-- ;
         if (obj.selfRefCount == 0) {
-            LuaSkin *skin = [LuaSkin sharedWithState:L] ;
-            obj.selfRef = [skin luaUnref:refTable ref:obj.selfRef] ;
             obj.utf16string = nil ;
             obj = nil ;
         }

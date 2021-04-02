@@ -13,7 +13,6 @@ extern int luaopen_hs_text_regex(lua_State *L) ;
 
 @interface HSTextObject : NSObject
 @property NSData           *contents ;
-@property int              selfRef ;
 @property int              selfRefCount ;
 @property NSStringEncoding encoding ;
 
@@ -22,7 +21,6 @@ extern int luaopen_hs_text_regex(lua_State *L) ;
 
 @interface HSTextUTF16Object : NSObject
 @property NSString *utf16string ;
-@property int      selfRef ;
 @property int      selfRefCount ;
 
 - (instancetype)initWithString:(NSString *)string ;
@@ -43,7 +41,6 @@ extern int luaopen_hs_text_regex(lua_State *L) ;
 @end
 
 @interface HSRegularExpression : NSRegularExpression
-@property int      selfRef ;
 @property int      selfRefCount ;
 
 - (instancetype)initWithPattern:(NSString *)pattern options:(NSRegularExpressionOptions)options ;
