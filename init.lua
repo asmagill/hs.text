@@ -558,7 +558,7 @@ regexMT.matchIn = function(self, text, init)
 
     local pos = init or 1
 
-    local results = self:firstMatch(text, pos, -1, opt)
+    local results = self:firstMatch(text, pos, -1)
     if not results then return nil end
 
     local answers = {}
