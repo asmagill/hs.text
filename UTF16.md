@@ -44,7 +44,7 @@ utf16 = require("hs.text").utf16
 * <a href="#composedCharacters">utf16:composedCharacters() -> iteratorFunction</a>
 * <a href="#copy">utf16:copy() -> utf16TextObject</a>
 * <a href="#find">utf16:find(pattern, [i], [plain]) -> start, end, [captures...] | nil</a>
-* <a href="#gmatch">utf16:gmatch(pattern) -> iteratorFunction</a>
+* <a href="#gmatch">utf16:gmatch(pattern, [i]) -> iteratorFunction</a>
 * <a href="#gsub">utf16:gsub(pattern, replacement, [n]) -> utf16TextObject, count</a>
 * <a href="#len">utf16:len() -> integer</a>
 * <a href="#lower">utf16:lower([locale]) -> utf16TextObject</a>
@@ -372,19 +372,20 @@ Notes:
 
 <a name="gmatch"></a>
 ~~~lua
-utf16:gmatch(pattern) -> iteratorFunction
+utf16:gmatch(pattern, [i]) -> iteratorFunction
 ~~~
 Returns an iterator function that iteratively returns the captures (if specified) or the entire match (if no captures are specified) of the pattern over the utf16TextObject.
 
 Paramters:
- * `pattern` - a lua string or utf16TextObject specifying the pattern to iteratively match over the utf16TextObject.
+ * `pattern` - a lua string or utf16TextObject specifying the regular expression to iteratively match over the utf16TextObject.
+ * `i`       - an optional integer, default 1, specifying the starting character within the object for the search; negative indicies are counted from the end of the object.
 
 Returns:
  * an iterator function which can be used with the lua `for` command as an iterator.
 
 Notes:
  * This method is the utf16 equivalent of lua's `string.gmatch`.
- * This method uses the [hs.text.utf16:find](#find) method on a copy of the original string, so it is safe to modify the original object within the loop. See the documentation for [find](#find) for information on the format of `pattern`.
+ * This method uses the `hs.text.regex:gmatchIn` method with a copy of the original string, so it is safe to modify the original object within a loop.
 
  * The following examples are from the Lua documentation for `string.gmatch` modified with the proper syntax:
 
@@ -728,7 +729,7 @@ Valid options are as follows:
 
 >     The MIT License (MIT)
 >
-> Copyright (c) 2020 Aaron Magill
+> Copyright (c) 2021 Aaron Magill
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 >

@@ -487,7 +487,7 @@ regexMT.gmatchIn = function(self, text, init)
     end
 end
 
---- hs.text.utf16:find(pattern, [i]) -> start, end, [captures...] | nil
+--- hs.text.regex:findIn(pattern, [i]) -> start, end, [captures...] | nil
 --- Method
 --- Apply the regular expression to the provided text and returns the indicies first match for use like `string.find`.
 ---
@@ -531,7 +531,7 @@ regexMT.findIn = function(self, text, init)
 end
 
 
---- hs.text.regEx:matchIn(text, [i]) -> match(es) | nil
+--- hs.text.regex:matchIn(text, [i]) -> match(es) | nil
 --- Method
 --- Apply the regular expression to the provided text and returns the first match for use like `string.match`.
 ---
