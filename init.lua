@@ -178,6 +178,58 @@ end
 
 -- pragma - mark - hs.text.utf16 functions, methods, and constants
 
+--- hs.text.utf16:gsub(pattern, replacement, [n]) -> utf16TextObject, count
+--- Method
+--- Return a gopy of the object with occurances of the pattern replaced; global substitution.
+---
+--- Paramters:
+---  * `pattern`     - a lua string or utf16TextObject specifying the pattern for the match. See *Notes*.
+---  * `replacement` - a lua string, utf16TextObject, table, or function which specifies replacement(s) for pattern matches.
+---    * if `replacement` is a string or utf16TextObject, then its value is used for replacement.
+---    * if `replacement` is a table, the table is queried for every match using the first capture (if captures are specified) or the entire match (if no captures are specified). Keys in the table must be lua strings or utf16TextObjects, and values must be lua strings, numbers, or utf16TextObjects. If no key matches the capture, no replacement of the match occurs.
+---    * if `replacement` is a function, the function will be called with all of the captured substrings passed in as utf16TextObjects in order (or the entire match, if no captures are specified). The return value is used as the repacement of the match and must be `nil`, a lua string, a number, or a utf16TextObject. If the return value is `nil`, no replacement of the match occurs.
+---  * `n`           - an optional integer specifying the maximum number of replacements to perform. If this is not specified, all matches in the object will be replaced.
+---
+--- Returns:
+---  * a new utf16TextObject with the substitutions specified, followed by an integer specifying the number of substitutions that occurred.
+---
+--- Notes:
+---  * This method is the utf16 equivalent of lua's `string.gsub` with one important caveat:
+---    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
+---    * Again, ***Lua pattern matching syntax will not work with this method.***
+---
+---  * If `replacement` is a lua string or `hs.text.utf16` object, any sequence in the replacement of the form `$n` where `n` is an integer >= 0 will be replaced by the `n`th capture from the pattern (`$0` specifies the entire match). A `$` not followed by a number is treated as a literal `$`. To specify a literal `$` followed by a numeric digit, escape the dollar sign (e.g. `\$1`).
+---    * If you are concerned about possible meta-characters in the replacement that you wish to be treated literally, see `hs.text.regex.escapedTemplate`.
+---
+---  * The following examples are from the Lua documentation for `string.gsub` modified with the proper syntax:
+---
+---      ~~~
+---      x = hs.text.utf16.new("hello world"):gsub("(\\w+)", "$1 $1")
+---      -- x will equal "hello hello world world"
+---
+---      -- note that if we use Lua's block quotes (e.g. `[[` and `]]`), then we don't have to escape the backslash:
+---
+---      x = hs.text.utf16.new("hello world"):gsub([[\w+]], "$0 $0", 1)
+---      -- x will equal "hello hello world"
+---
+---      x = hs.text.utf16.new("hello world from Lua"):gsub([[(\w+)\s*(\w+)]], "$2 $1")
+---      -- x will equal "world hello Lua from"
+---
+---      x = hs.text.utf16.new("home = $HOME, user = $USER"):gsub([[\$(\w+)]], function(a) return os.getenv(tostring(a)) end)
+---      -- x will equal "home = /home/username, user = username"
+---
+---      x = hs.text.utf16.new("4+5 = $return 4+5$"):gsub([[\$(.+)\$]], function (s) return load(tostring(s))() end)
+---      -- x will equal "4+5 = 9"
+---
+---      local t = {name="lua", version="5.3"}
+---      x = hs.text.utf16.new("$name-$version.tar.gz"):gsub([[\$(\w+)]], t)
+---      -- x will equal "lua-5.3.tar.gz"
+---      ~~~
+utf16MT.gsub = function(self, pattern, ...)
+    local re = module.regex.new(pattern)
+    return re:gsubIn(self, ...)
+end
+
 --- hs.text.utf16:gmatch(pattern, [i]) -> iteratorFunction
 --- Method
 --- Returns an iterator function that iteratively returns the captures (if specified) or the entire match (if no captures are specified) of the pattern over the utf16TextObject.
@@ -209,24 +261,9 @@ end
 ---        t[tostring(k)] = tostring(v)
 ---      end
 ---      ~~~
--- utf16MT.gmatch = function(self, pattern)
---     local pos, selfCopy = 1, self:copy()
---     return function()
---         local results = table.pack(selfCopy:find(pattern, pos))
---         if results.n < 2 then return end
---         pos = results[2] + 1
---         if results.n == 2 then
---             return selfCopy:sub(results[1], results[2])
---         else
---             table.remove(results, 1)
---             table.remove(results, 1)
---             return table.unpack(results)
---         end
---     end
--- end
-utf16MT.gmatch = function(self, pattern, i)
+utf16MT.gmatch = function(self, pattern, ...)
     local re = module.regex.new(pattern)
-    return re:gmatchIn(self, i)
+    return re:gmatchIn(self, ...)
 end
 
 --- hs.text.utf16:find(pattern, [i], [plain]) -> start, end, [captures...] | nil
@@ -245,9 +282,11 @@ end
 ---  * This method is the utf16 equivalent of lua's `string.find` with one important caveat:
 ---    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
 ---    * Again, ***Lua pattern matching syntax will not work with this method.***
-utf16MT.find = function(self, pattern, i, plain)
+utf16MT.find = function(self, pattern, ...)
+    local args = { ... }
+    local plain = (type(args[#args]) == "boolean") and table.remove(args) or false
     local re = module.regex.new(pattern, (plain and module.regex.expressionOptions.ignoreMetacharacters or 0))
-    return re:findIn(self, i)
+    return re:findIn(self, table.unpack(args))
 end
 
 --- hs.text.utf16:match(pattern, [i]) -> match(es) | nil
@@ -265,9 +304,9 @@ end
 ---  * This method is the utf16 equivalent of lua's `string.match` with one important caveat:
 ---    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
 ---    * Again, ***Lua pattern matching syntax will not work with this method.***
-utf16MT.match = function(self, pattern, i)
+utf16MT.match = function(self, pattern, ...)
     local re = module.regex.new(pattern)
-    return re:matchIn(self, i)
+    return re:matchIn(self, ...)
 end
 
 --- hs.text.utf16:codes() -> iteratorFunction
@@ -573,8 +612,6 @@ regexMT.matchIn = function(self, text, init)
 
     return table.unpack(answers)
 end
-
--- regexMT.gsubIn
 
 -- Return Module Object --------------------------------------------------
 

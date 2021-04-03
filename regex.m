@@ -299,6 +299,222 @@ static int regex_firstMatch(lua_State *L) {
     return 1 ;
 }
 
+/// hs.text.regex:gsubIn(text, template, [n]) -> updatedText, count
+/// Method
+/// Return a gopy of the text where occurrences of the regex pattern have been replaced; global substitution for use like `string.gsub`.
+///
+/// Paramters:
+///  * `text`        - the text to apply the regular expression to, provided as a lua string or `hs.text.utf16` object.
+///  * `template`    - a lua string, `hs.text.utf16` object, table, or function which specifies replacement(s) for pattern matches.
+///    * if `template` is a string or `hs.text.utf16` object, then its value is used for replacement.
+///    * if `template` is a table, the table is queried for every match using the first capture (if captures are specified) or the entire match (if no captures are specified). Keys in the table must be lua strings or `hs.text.utf16` objects, and values must be lua strings, numbers, or `hs.text.utf16` objects. If no key matches the capture, no replacement of the match occurs.
+///    * if `template` is a function, the function will be called with all of the captured substrings passed in as lua strings or `hs.text.utf16` objects (based upon the type for `text`) in order (or the entire match, if no captures are specified). The return value is used as the repacement of the match and must be `nil`, a lua string, a number, or a `hs.text.utf16` object. If the return value is `nil`, no replacement of the match occurs.
+///  * `n`           - an optional integer specifying the maximum number of replacements to perform. If this is not specified, all matches in the object will be replaced.
+///
+/// Returns:
+///  * a new lua string or `hs.text.utf16` object (based upon the type for `text`) with the substitutions specified, followed by an integer indicating the number of substitutions that occurred.
+///
+/// Notes:
+///  * If `template` is a lua string or `hs.text.utf16` object, any sequence in the replacement of the form `$n` where `n` is an integer >= 0 will be replaced by the `n`th capture from the pattern (`$0` specifies the entire match). A `$` not followed by a number is treated as a literal `$`. To specify a literal `$` followed by a numeric digit, escape the dollar sign (e.g. `\$1`).
+///    * If you are concerned about possible meta-characters in the template that you wish to be treated literally, see [hs.text.regex.escapedTemplate](#escapedTemplate).
+///
+///  * The following examples are from the Lua documentation for `string.gsub` modified with the proper syntax:
+///
+///      ~~~
+///      x = hs.text.regex.new("(\\w+)"):gsubIn("hello world", "$1 $1")
+///      -- x will equal "hello hello world world"
+///
+///      -- note that if we use Lua's block quotes (e.g. `[[` and `]]`), then we don't have to escape the backslash:
+///
+///      x = hs.text.regex.new([[\w+]]):gsubIn("hello world", "$0 $0", 1)
+///      -- x will equal "hello hello world"
+///
+///      x = hs.text.regex.new([[(\w+)\s*(\w+)]]):gsubIn("hello world from Lua", "$2 $1")
+///      -- x will equal "world hello Lua from"
+///
+///      x = hs.text.regex.new([[\$(\w+)]]):gsubIn("home = $HOME, user = $USER", function(a) return os.getenv(tostring(a)) end)
+///      -- x will equal "home = /Users/username, user = username"
+///
+///      x = hs.text.regex.new([[\$(.+)\$]]):gsubIn("4+5 = $return 4+5$", function (s) return load(tostring(s))() end)
+///      -- x will equal "4+5 = 9"
+///
+///      local t = {name="lua", version="5.3"}
+///      x = hs.text.regex.new([[\$(\w+)]]):gsubIn("$name-$version.tar.gz", t)
+///      -- x will equal "lua-5.3.tar.gz"
+///      ~~~
+static int regex_gsubIn(lua_State *L) {
+    LuaSkin *skin = [LuaSkin sharedWithState:L] ;
+    [skin checkArgs:LS_TUSERDATA, REGEX_UD_TAG, LS_TANY, LS_TANY, LS_TNUMBER | LS_TINTEGER | LS_TOPTIONAL, LS_TBREAK] ;
+    HSRegularExpression *regex = [skin toNSObjectAtIndex:1] ;
+    NSString            *text  = nil ;
+
+    BOOL                textIsUD = (lua_type(L, 2) == LUA_TUSERDATA) ;
+
+    if (textIsUD) {
+        [skin checkArgs:LS_TANY, LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK | LS_TVARARG] ;
+        HSTextUTF16Object *utf16Object = [skin toNSObjectAtIndex:2] ;
+        text = utf16Object.utf16string ;
+    } else {
+        [skin checkArgs:LS_TANY, LS_TSTRING, LS_TBREAK | LS_TVARARG] ;
+        text = [skin toNSObjectAtIndex:2] ;
+    }
+
+    // prepare placeholders for the possible values of argument 3
+    NSString *replString = (lua_type(L, 3) == LUA_TSTRING) ? [skin toNSObjectAtIndex:3] : nil ;
+    if (lua_type(L, 3) == LUA_TUSERDATA) {
+        [skin checkArgs:LS_TANY, LS_TANY, LS_TUSERDATA, UTF16_UD_TAG, LS_TBREAK | LS_TVARARG] ;
+        HSTextUTF16Object *replObject = [skin toNSObjectAtIndex:3] ;
+        replString = replObject.utf16string ;
+    } else {
+        [skin checkArgs:LS_TANY, LS_TANY, LS_TSTRING | LS_TTABLE | LS_TFUNCTION, LS_TBREAK | LS_TVARARG] ;
+    }
+
+    NSDictionary *replDictionary = (lua_type(L, 3) == LUA_TTABLE)  ? [skin toNSObjectAtIndex:3] : nil ;
+    if (replDictionary) {
+        // if they pass in an array like table, we silently ignore it since the keys have to be strings
+        if ([replDictionary isKindOfClass:[NSArray class]]) {
+            replDictionary = [NSDictionary dictionary] ;
+        } else {
+            NSMutableDictionary *realReplDictionary = [NSMutableDictionary dictionaryWithCapacity:replDictionary.count] ;
+            __block NSString *errorMessage = nil ;
+            [replDictionary enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
+                NSString *newKey   = key ;
+                NSString *newValue = value ;
+                if ([key isKindOfClass:[HSTextUTF16Object class]]) {
+                    newKey = ((HSTextUTF16Object *)key).utf16string ;
+                } else if (![key isKindOfClass:[NSString class]]) {
+                    errorMessage = @"expected string or hs.text.utf16 object for replacement key in table" ;
+                    *stop = true ;
+                    return ;
+                }
+                if ([value isKindOfClass:[HSTextUTF16Object class]]) {
+                    newValue = ((HSTextUTF16Object *)value).utf16string ;
+                } else if ([value isKindOfClass:[NSNumber class]]) {
+                    newValue = ((NSNumber *)value).stringValue ;
+                } else if (![value isKindOfClass:[NSString class]]) {
+                    errorMessage = @"expected string, number, or hs.text.utf16 object for replacement value in table" ;
+                    *stop = true ;
+                    return ;
+                }
+                realReplDictionary[newKey] = newValue ;
+            }] ;
+            if (errorMessage) return luaL_argerror(L, 3, errorMessage.UTF8String) ;
+
+            replDictionary = [realReplDictionary copy] ;
+        }
+    }
+
+    int replFnRef = LUA_NOREF ;
+    if (lua_type(L, 3) == LUA_TFUNCTION) {
+        lua_pushvalue(L, 3) ;
+        replFnRef = [skin luaRef:refTable] ;
+    }
+
+    lua_Integer maxSubstitutions = (lua_gettop(L) > 3) ? lua_tointeger(L, 4) : ((lua_Integer)text.length + 1) ;
+
+    lua_Integer changeCount = 0 ;
+
+    // inspired by https://stackoverflow.com/a/23827451
+    NSMutableString* mutableText = [text mutableCopy] ;
+    NSInteger offset = 0 ; // keeps track of range changes in the string due to replacements.
+    for (NSTextCheckingResult* result in [regex matchesInString:text options:0 range:NSMakeRange(0, text.length)]) {
+        if (changeCount >= maxSubstitutions) break ;
+
+        NSRange resultRange = [result range] ;
+        // update based on cumulative offset
+        resultRange.location = (NSUInteger)((NSInteger)resultRange.location + offset) ;
+
+        NSMutableArray *captures = [NSMutableArray arrayWithCapacity:result.numberOfRanges] ;
+        for (NSUInteger i = 0 ; i < result.numberOfRanges ; i++) {
+            NSRange captureRange = [result rangeAtIndex:i] ;
+            if (captureRange.location == NSNotFound) {
+                [captures addObject:@""] ;
+            } else {
+                // update based on cumulative offset
+                captureRange.location = (NSUInteger)((NSInteger)captureRange.location + offset) ;
+                [captures addObject:[mutableText substringWithRange:captureRange]] ;
+            }
+        }
+
+        // here's where the magic happens
+        NSString *replacement = nil ;
+        if (replString) {
+            replacement = [regex replacementStringForResult:result inString:mutableText offset:offset template:replString] ;
+        } else if (replDictionary) {
+            replacement = [replDictionary objectForKey:(captures.count > 1) ? captures[1] : captures[0]] ;
+            if (!replacement) replacement = captures[0] ;
+        } else if (replFnRef != LUA_NOREF) {
+            [skin pushLuaRef:refTable ref:replFnRef] ;
+            int argCount = (int)captures.count - 1 ;
+            if (argCount == 0) {
+                if (textIsUD) {
+                    HSTextUTF16Object *newObject = [[HSTextUTF16Object alloc] initWithString:captures[0]] ;
+                    [skin pushNSObject:newObject] ;
+                } else {
+                    [skin pushNSObject:captures[0]] ;
+                }
+                argCount = 1 ;
+            } else {
+                for (NSUInteger i = 1 ; i < captures.count ; i++) {
+                    if (textIsUD) {
+                        HSTextUTF16Object *newObject = [[HSTextUTF16Object alloc] initWithString:captures[i]] ;
+                        [skin pushNSObject:newObject] ;
+                    } else {
+                        [skin pushNSObject:captures[i]] ;
+                    }
+                }
+            }
+            if (![skin protectedCallAndTraceback:argCount nresults:1]) {
+                return luaL_error(L, lua_tostring(L, -1)) ;
+            } else {
+                switch(lua_type(L, -1)) {
+                    case LUA_TNIL:
+                        replacement = captures[0] ;
+                        break ;
+                    case LUA_TSTRING:
+                        {
+                            NSData *input = [skin toNSObjectAtIndex:-1 withOptions:LS_NSLuaStringAsDataOnly] ;
+                            replacement = [[NSString alloc] initWithData:input encoding:NSUTF8StringEncoding] ;
+                        }
+                        break ;
+                    case LUA_TNUMBER:
+                        replacement = [NSString stringWithCString:lua_tostring(L, -1) encoding:NSUTF8StringEncoding] ;
+                        break ;
+                    case LUA_TUSERDATA:
+                        if (luaL_testudata(L, -1, UTF16_UD_TAG)) {
+                            HSTextUTF16Object *newObject = [skin toNSObjectAtIndex:-1] ;
+                            replacement = newObject.utf16string ;
+                            break ;
+                        }
+                    default:
+                        return luaL_error(L, "invalid replacement value (a %s)", lua_typename(L, -1)) ;
+                }
+            }
+            lua_pop(L, 1) ;
+        }
+
+        // make the replacement
+        [mutableText replaceCharactersInRange:resultRange withString:replacement] ;
+
+        // update the offset based on the replacement
+        offset += ((NSInteger)replacement.length - (NSInteger)resultRange.length) ;
+
+        changeCount++ ;
+    }
+
+    if (replFnRef != LUA_NOREF) {
+        replFnRef = [skin luaUnref:refTable ref:replFnRef] ;
+    }
+    if (textIsUD) {
+        HSTextUTF16Object *newObject = [[HSTextUTF16Object alloc] initWithString:mutableText] ;
+        [skin pushNSObject:newObject] ;
+    } else {
+        [skin pushNSObject:mutableText] ;
+    }
+    lua_pushinteger(L, changeCount) ;
+    return 2 ;
+}
+
 // /// hs.text.regex:matchWithCallback(text, callback, [options], [i], [j]) -> regexObject
 // /// Method
 // /// Apply the regular expression to the provided text, invoking the callback for each match.
@@ -558,7 +774,9 @@ static const luaL_Reg userdata_metaLib[] = {
     {"options",             regex_options},
     {"captureCount",        regex_captureCount},
 
+    {"gsubIn",              regex_gsubIn},
     {"firstMatch",          regex_firstMatch},
+
 //     {"matchWithCallback",   regex_matchWithCallback},
 //     {"replaceWithCallback", regesxreplaceWithCallback},
 

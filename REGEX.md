@@ -33,6 +33,7 @@ regex = require("hs.text").regex
 * <a href="#findIn">regex:findIn(pattern, [i]) -> start, end, [captures...] | nil</a>
 * <a href="#firstMatch">regex:firstMatch(text, [i], [j], [options]) -> table | nil</a>
 * <a href="#gmatchIn">regex:gmatchIn(text, [i]) -> function</a>
+* <a href="#gsubIn">regex:gsubIn(text, template, [n]) -> updatedText, count</a>
 * <a href="#matchIn">regex:matchIn(text, [i]) -> match(es) | nil</a>
 * <a href="#options">regex:options() -> integer</a>
 * <a href="#pattern">regex:pattern() -> string</a>
@@ -199,6 +200,54 @@ Notes:
  * if `text` is an `hs.text.utf16` object:
    * a copy is made before creating the iterator so it is safe to modify the original object from within a loop using the iterator function.
    * `i` should be specified in terms of UTF16 "character" positions within the string and, depending upon the pattern, may break surrogate pairs or composed characters. See `hs.text.utf16:composedCharacterRange` to verify match and indicies if this might be an issue for your purposes.
+
+- - -
+
+<a name="gsubIn"></a>
+~~~lua
+regex:gsubIn(text, template, [n]) -> updatedText, count
+~~~
+Return a gopy of the text where occurrences of the regex pattern have been replaced; global substitution for use like `string.gsub`.
+
+Paramters:
+ * `text`        - the text to apply the regular expression to, provided as a lua string or `hs.text.utf16` object.
+ * `template`    - a lua string, `hs.text.utf16` object, table, or function which specifies replacement(s) for pattern matches.
+   * if `template` is a string or `hs.text.utf16` object, then its value is used for replacement.
+   * if `template` is a table, the table is queried for every match using the first capture (if captures are specified) or the entire match (if no captures are specified). Keys in the table must be lua strings or `hs.text.utf16` objects, and values must be lua strings, numbers, or `hs.text.utf16` objects. If no key matches the capture, no replacement of the match occurs.
+   * if `template` is a function, the function will be called with all of the captured substrings passed in as lua strings or `hs.text.utf16` objects (based upon the type for `text`) in order (or the entire match, if no captures are specified). The return value is used as the repacement of the match and must be `nil`, a lua string, a number, or a `hs.text.utf16` object. If the return value is `nil`, no replacement of the match occurs.
+ * `n`           - an optional integer specifying the maximum number of replacements to perform. If this is not specified, all matches in the object will be replaced.
+
+Returns:
+ * a new lua string or `hs.text.utf16` object (based upon the type for `text`) with the substitutions specified, followed by an integer indicating the number of substitutions that occurred.
+
+Notes:
+ * If `template` is a lua string or `hs.text.utf16` object, any sequence in the replacement of the form `$n` where `n` is an integer >= 0 will be replaced by the `n`th capture from the pattern (`$0` specifies the entire match). A `$` not followed by a number is treated as a literal `$`. To specify a literal `$` followed by a numeric digit, escape the dollar sign (e.g. `\$1`).
+   * If you are concerned about possible meta-characters in the template that you wish to be treated literally, see [hs.text.regex.escapedTemplate](#escapedTemplate).
+
+ * The following examples are from the Lua documentation for `string.gsub` modified with the proper syntax:
+
+     ~~~
+     x = hs.text.regex.new("(\\w+)"):gsubIn("hello world", "$1 $1")
+     -- x will equal "hello hello world world"
+
+     -- note that if we use Lua's block quotes (e.g. `[[` and `]]`), then we don't have to escape the backslash:
+
+     x = hs.text.regex.new([[\w+]]):gsubIn("hello world", "$0 $0", 1)
+     -- x will equal "hello hello world"
+
+     x = hs.text.regex.new([[(\w+)\s*(\w+)]]):gsubIn("hello world from Lua", "$2 $1")
+     -- x will equal "world hello Lua from"
+
+     x = hs.text.regex.new([[\$(\w+)]]):gsubIn("home = $HOME, user = $USER", function(a) return os.getenv(tostring(a)) end)
+     -- x will equal "home = /Users/username, user = username"
+
+     x = hs.text.regex.new([[\$(.+)\$]]):gsubIn("4+5 = $return 4+5$", function (s) return load(tostring(s))() end)
+     -- x will equal "4+5 = 9"
+
+     local t = {name="lua", version="5.3"}
+     x = hs.text.regex.new([[\$(\w+)]]):gsubIn("$name-$version.tar.gz", t)
+     -- x will equal "lua-5.3.tar.gz"
+     ~~~
 
 - - -
 

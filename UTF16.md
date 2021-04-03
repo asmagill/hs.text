@@ -415,7 +415,7 @@ Return a gopy of the object with occurances of the pattern replaced; global subs
 Paramters:
  * `pattern`     - a lua string or utf16TextObject specifying the pattern for the match. See *Notes*.
  * `replacement` - a lua string, utf16TextObject, table, or function which specifies replacement(s) for pattern matches.
-   * if `replacement` is a string or utf16TextObject, then its value is used for replacement. Any sequence in the replacement of the form `$n` where `n` is an integer >= 0 will be replaced by the `n`th capture from the pattern (`$0` specifies the entire match). A `$` not followed by a number is treated as a literal `$`. To specify a literal `$` followed by a numeric digit, escape the dollar sign (e.g. `\$1`)
+   * if `replacement` is a string or utf16TextObject, then its value is used for replacement.
    * if `replacement` is a table, the table is queried for every match using the first capture (if captures are specified) or the entire match (if no captures are specified). Keys in the table must be lua strings or utf16TextObjects, and values must be lua strings, numbers, or utf16TextObjects. If no key matches the capture, no replacement of the match occurs.
    * if `replacement` is a function, the function will be called with all of the captured substrings passed in as utf16TextObjects in order (or the entire match, if no captures are specified). The return value is used as the repacement of the match and must be `nil`, a lua string, a number, or a utf16TextObject. If the return value is `nil`, no replacement of the match occurs.
  * `n`           - an optional integer specifying the maximum number of replacements to perform. If this is not specified, all matches in the object will be replaced.
@@ -427,6 +427,9 @@ Notes:
  * This method is the utf16 equivalent of lua's `string.gsub` with one important caveat:
    * This method utilizes regular expressions as described at http://userguide.icu-project.org/strings/regexp, not the Lua pattern matching syntax.
    * Again, ***Lua pattern matching syntax will not work with this method.***
+
+ * If `replacement` is a lua string or `hs.text.utf16` object, any sequence in the replacement of the form `$n` where `n` is an integer >= 0 will be replaced by the `n`th capture from the pattern (`$0` specifies the entire match). A `$` not followed by a number is treated as a literal `$`. To specify a literal `$` followed by a numeric digit, escape the dollar sign (e.g. `\$1`).
+   * If you are concerned about possible meta-characters in the replacement that you wish to be treated literally, see `hs.text.regex.escapedTemplate`.
 
  * The following examples are from the Lua documentation for `string.gsub` modified with the proper syntax:
 
@@ -443,7 +446,7 @@ Notes:
      -- x will equal "world hello Lua from"
 
      x = hs.text.utf16.new("home = $HOME, user = $USER"):gsub([[\$(\w+)]], function(a) return os.getenv(tostring(a)) end)
-     -- x will equal "home = /home/username, user = username"
+     -- x will equal "home = /Users/username, user = username"
 
      x = hs.text.utf16.new("4+5 = $return 4+5$"):gsub([[\$(.+)\$]], function (s) return load(tostring(s))() end)
      -- x will equal "4+5 = 9"
