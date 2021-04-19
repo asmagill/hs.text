@@ -70,7 +70,14 @@ static int utf16_new(lua_State *L) {
     BOOL             lossy    = (lua_gettop(L) > 1) ? (BOOL)(lua_toboolean(L, 2)) : NO ;
     NSStringEncoding encoding = NSUTF8StringEncoding ;
 
-    if (lua_type(L, 1) == LUA_TUSERDATA) {
+    if (lua_type(L, 1) == LUA_TLIGHTUSERDATA) {
+        // we're being called by another module's internal code to avoid passing the string through lua first
+        [skin checkArgs:LS_TANY, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
+
+        NSString *object = [NSString stringWithString:(__bridge NSString *)(lua_touserdata(L, 1))] ;
+        input            = [object dataUsingEncoding:NSUnicodeStringEncoding allowLossyConversion:NO] ;
+        encoding         = NSUnicodeStringEncoding ;
+    } else if (lua_type(L, 1) == LUA_TUSERDATA) {
         [skin checkArgs:LS_TUSERDATA, USERDATA_TAG, LS_TBOOLEAN | LS_TOPTIONAL, LS_TBREAK] ;
 
         HSTextObject *object = [skin toNSObjectAtIndex:1] ;
@@ -1080,7 +1087,7 @@ static int pushHSTextUTF16Object(lua_State *L, id obj) {
     return 1 ;
 }
 
-id toHSTextUTF16ObjectFromLua(lua_State *L, int idx) {
+static id toHSTextUTF16ObjectFromLua(lua_State *L, int idx) {
     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSTextUTF16Object *value ;
     if (luaL_testudata(L, idx, UTF16_UD_TAG)) {
