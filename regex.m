@@ -714,7 +714,7 @@ static int pushHSRegularExpression(lua_State *L, id obj) {
     return 1;
 }
 
-id toHSRegularExpressionFromLua(lua_State *L, int idx) {
+static id toHSRegularExpressionFromLua(lua_State *L, int idx) {
     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSRegularExpression *value ;
     if (luaL_testudata(L, idx, REGEX_UD_TAG)) {

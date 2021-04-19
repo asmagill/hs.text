@@ -614,7 +614,7 @@ static int pushHSTextObject(lua_State *L, id obj) {
     return 1;
 }
 
-id toHSTextObjectFromLua(lua_State *L, int idx) {
+static id toHSTextObjectFromLua(lua_State *L, int idx) {
     LuaSkin *skin = [LuaSkin sharedWithState:L] ;
     HSTextObject *value ;
     if (luaL_testudata(L, idx, USERDATA_TAG)) {
